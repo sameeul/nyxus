@@ -1,10 +1,11 @@
 cmake_minimum_required(VERSION 3.20)
+include(GNUInstallDirs)
 project(AxleNyxus)
 
 # this is a workaround for GitHub Action for wheelbuiling
 if(DEFINED ENV{NYXUS_DEP_DIR})
 	set(CMAKE_PREFIX_PATH $ENV{NYXUS_DEP_DIR})
-	link_directories($ENV{NYXUS_DEP_DIR}/lib)
+	link_directories($ENV{NYXUS_DEP_DIR}/${CMAKE_INSTALL_LIBDIR})
 endif()
 
 include(ExternalProject)
@@ -328,7 +329,7 @@ if(USEGPU)
 	endif()
 	list(APPEND Nyxus_LIBRARIES ${CUDA_LIBRARIES})
 	list(APPEND Nyxus_LIBRARIES ${CUDA_CUFFT_LIBRARIES})
-	list(APPEND Nyxus_LIBRARIES ${nyxus_gpu})
+	list(APPEND Nyxus_LIBRARIES nyxus_gpu)
 
 	if(BUILD_LIB)
 		set_target_properties(backend PROPERTIES CUDA_ARCHITECTURES ${CUDA_ARCH_LIST})
