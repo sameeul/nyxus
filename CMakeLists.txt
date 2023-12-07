@@ -134,9 +134,6 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O2")
 #== GTest 
 option(RUN_GTEST "Downloads google unit test API and runs google test scripts to test Nyxus" OFF)
 
-#==== Pybind11
-find_package(pybind11 CONFIG REQUIRED)
-
 #==== Source files
 set(SOURCE
 	src/nyx/arrow_output_stream.cpp
@@ -210,6 +207,12 @@ set(SOURCE
 	src/nyx/scan_fastloader_way.cpp
 )
 
+#== Required for OMETiff  
+find_package(TIFF REQUIRED)
+if (TIFF_FOUND)
+	list(APPEND Nyxus_LIBRARIES ${TIFF_LIBRARIES})
+	include_directories (${TIFF_INCLUDE_DIR})
+endif (TIFF_FOUND)
 
 # CLI
 if(BUILD_CLI)
@@ -218,7 +221,9 @@ endif()
 
 # Python bindings.
 if(BUILD_LIB)
-	pybind11_add_module(backend 
+#==== Pybind11
+	find_package(pybind11 CONFIG REQUIRED)
+ 	pybind11_add_module(backend 
 		${SOURCE}
 		src/nyx/python/nested_roi_py.cpp
 		src/nyx/python/new_bindings_py.cpp
@@ -226,13 +231,6 @@ if(BUILD_LIB)
 		src/nyx/nested_roi.cpp
 	)
 endif()
-
-#== Required for OMETiff  
-find_package(TIFF REQUIRED)
-if (TIFF_FOUND)
-	list(APPEND Nyxus_LIBRARIES ${TIFF_LIBRARIES})
-	include_directories (${TIFF_INCLUDE_DIR})
-endif (TIFF_FOUND)
 
 #== Required for OMEZarr 
 if(USE_Z5)
