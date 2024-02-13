@@ -36,8 +36,7 @@ jobs:
       - name: Install CUDA
         if: runner.os == 'Windows'
         run: |
-          choco install cuda
-          refreshenv
+          choco install --verbose --yes cuda
           nvcc --version 
 
 
