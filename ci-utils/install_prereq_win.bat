@@ -86,7 +86,7 @@ if "%BUILD_Z5_DEP%" == "1" (
     pushd z5-3.0.1
     mkdir build_man
     pushd build_man
-    cmake -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_INSTALL_PREFIX=../../local_install/   -DCMAKE_PREFIX_PATH=%ABS_INSTALL% -DWITH_BLOSC=ON -DBUILD_Z5PY=OFF ..
+    cmake -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_INSTALL_PREFIX=../../local_install/   -DCMAKE_PREFIX_PATH=%ABS_INSTALL% -DWITH_BLOSC=ON -DBUILD_Z5PY=OFF -DUSE_LIBDEFLATE=OFF ..
     cmake --build . --config Release --target install  --parallel 4
     popd
     popd
