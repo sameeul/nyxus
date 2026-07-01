@@ -376,14 +376,21 @@ endif()
 if(USE_ARROW)
 	# Look for installed packages the system
 	find_package(Arrow)
-	if (NOT Arrow_FOUND) 
+	if (NOT Arrow_FOUND)
 		message(WARNING "The Arrow library was not found. The build will continue without Arrow support.")
 		set(USE_ARROW OFF)
 	endif()
-	
+
 	find_package(Parquet)
-	if (NOT Parquet_FOUND) 
+	if (NOT Parquet_FOUND)
 		message(WARNING "The Parquet library was not found. The build will continue without Arrow support.")
+		set(USE_ARROW OFF)
+	endif()
+
+	# Building Arrow support requires Boost
+	find_package(Boost)
+	if(NOT Boost_FOUND)
+		message(WARNING "Boost not found. The build will continue without Arrow support.")
 		set(USE_ARROW OFF)
 	endif()
 
@@ -391,6 +398,9 @@ endif()
 
 if(USE_ARROW)
 	add_definitions(-DUSE_ARROW)
+	if(Boost_FOUND)
+		include_directories(${Boost_INCLUDE_DIRS})
+	endif()
 	list(APPEND Nyxus_LIBRARIES arrow_shared)
 	list(APPEND Nyxus_LIBRARIES parquet_shared)
 endif()
