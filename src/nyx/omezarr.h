@@ -144,11 +144,9 @@ public:
         std::vector<FileType> buffer(data_height * data_width);
         
         // Create an ArrayView into the buffer (z5 3.0.1 uses ArrayView instead of xtensor)
-        z5::types::ShapeType shape = {data_height, data_width};
+        z5::types::ShapeType shape = {1, 1, 1, data_height, data_width};
         auto view = z5::multiarray::makeView(buffer.data(), shape);
-        
-        // Offset for reading (y, x within the 2D slice)
-        z5::types::ShapeType offset = {pixel_row_index, pixel_col_index};
+        z5::types::ShapeType offset = {0, 0, pixel_layer_index, pixel_row_index, pixel_col_index};
         
         // Read subarray from z5 dataset
         z5::multiarray::readSubarray<FileType>(*ds, view, offset.begin());
