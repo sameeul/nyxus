@@ -1,4 +1,4 @@
-z5py >=3.0
+z5
 libtiff <=4.7.0
 boost >=1.63
 nlohmann_json 
