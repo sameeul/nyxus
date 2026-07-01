@@ -25,10 +25,10 @@ check() {
 echo "=== Validating prereq installation in $LOCAL_INSTALL ==="
 
 echo ""
-echo "-- Z5 support (CMakeLists.txt: find_package ZLIB, BLOSC, Boost, nlohmann_json; find_file z5/z5.hxx) --"
+echo "-- Z5 support (CMakeLists.txt: find_package ZLIB, BLOSC, nlohmann_json; find_file z5/z5.hxx) --"
 check "Z5 header"             "$LOCAL_INSTALL/include/z5/z5.hxx"
+check "Z5 array_access header" "$LOCAL_INSTALL/include/z5/multiarray/array_access.hxx"
 check "nlohmann_json headers" "$LOCAL_INSTALL/include/nlohmann/json.hpp"
-check "xtensor headers"       "$LOCAL_INSTALL/include/xtensor/containers/xtensor.hpp"
 check "blosc header"          "$LOCAL_INSTALL/include/blosc.h"
 
 echo ""

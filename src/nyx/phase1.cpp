@@ -13,6 +13,7 @@
 
 #include "environment.h"
 #include "globals.h"
+#include "helpers/helpers.h"
 #include "helpers/timing.h"
 
 namespace Nyxus
@@ -29,8 +30,8 @@ namespace Nyxus
 			lyr = 0; //	Layer
 
 		// Read the tiff. The image loader is put in the open state in processDataset()
-		size_t nth = L.get_num_tiles_hor(),
-			ntv = L.get_num_tiles_vert(),
+		size_t ntHor = L.get_num_tiles_hor(),
+			ntVert = L.get_num_tiles_vert(),
 			fw = L.get_tile_width(),
 			th = L.get_tile_height(),
 			tw = L.get_tile_width(),
@@ -38,9 +39,9 @@ namespace Nyxus
 			fullwidth = L.get_full_width(),
 			fullheight = L.get_full_height();
 
-		int cnt = 1;
-		for (unsigned int row = 0; row < nth; row++)
-			for (unsigned int col = 0; col < ntv; col++)
+		size_t tileCnt = 1;
+		for (size_t row = 0; row < ntVert; row++)
+			for (size_t col = 0; col < ntHor; col++)
 			{
 				// Fetch the tile 
 				bool ok = L.load_tile(row, col);
@@ -57,7 +58,7 @@ namespace Nyxus
 				// Get ahold of tile's pixel buffer
 				const std::vector<uint32_t>& dataI = L.get_int_tile_buffer();
 				const std::shared_ptr<std::vector<uint32_t>>& spL = L.get_seg_tile_sptr();
-				bool wholeslide = spL == nullptr; 
+				bool wholeslide = env.singleROI;
 
 				// Iterate pixels
 				for (size_t i = 0; i < tileSize; i++)
@@ -71,9 +72,13 @@ namespace Nyxus
 					if (! label)
 						continue;
 
+					// Merge all foreground labels into a single ROI if requested
+					if (env.mergeLabels)
+						label = 1;
+
 					int y = row * th + i / tw,
 						x = col * tw + i % tw;
-					
+
 					// Skip tile buffer pixels beyond the image's bounds
 					if (x >= fullwidth || y >= fullheight)
 						continue;
@@ -89,8 +94,8 @@ namespace Nyxus
 
 				// Show progress info
 				VERBOSLVL2 (env.get_verbosity_level(),
-					if (cnt++ % 4 == 0)
-						std::cout << "\t" << int((row * nth + col) * 100 / float(nth * ntv) * 100) / 100. << "%\t" << env.uniqueLabels.size() << " ROIs" << "\n";
+					if (tileCnt++ % 4 == 0)
+						std::cout << "\t" << Nyxus::round2(100. * float(row * ntHor + col) / float(ntHor * ntVert)) << " %\t " << Nyxus::virguler_ulong(env.uniqueLabels.size()) << " ROIs gathered" << "\n";
 				);
 			}
 
@@ -383,6 +388,10 @@ namespace Nyxus
 				if (!label)
 					continue;
 
+				// Merge all foreground labels into a single ROI if requested
+				if (env.mergeLabels)
+					label = 1;
+
 				// Collapse all the labels to one if single-ROI mde is requested
 				if (env.singleROI)
 					label = 1;
@@ -390,10 +399,9 @@ namespace Nyxus
 				// Update pixel's ROI metrics
 				auto inten = rI (pair_index, row, col);
 				feed_pixel_2_metrics (env.uniqueLabels, env.roiData, col, row, inten, label, pair_index); // Updates 'uniqueLabels' and 'roiData'
-
-				if (PyErr_CheckSignals() != 0)
-					throw pybind11::error_already_set();
 			}
+		if (PyErr_CheckSignals() != 0)
+			throw pybind11::error_already_set();
 
 		return true;
 	}

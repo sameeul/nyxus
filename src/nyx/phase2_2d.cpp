@@ -101,8 +101,8 @@ namespace Nyxus
 			lyr = 0;	//	Layer
 
 		// Read the tiffs
-		size_t nth = ldr.get_num_tiles_hor(),
-			ntv = ldr.get_num_tiles_vert(),
+		size_t ntHor = ldr.get_num_tiles_hor(),
+			ntVert = ldr.get_num_tiles_vert(),
 			fw = ldr.get_tile_width(),
 			th = ldr.get_tile_height(),
 			tw = ldr.get_tile_width(),
@@ -110,9 +110,9 @@ namespace Nyxus
 			fullwidth = ldr.get_full_width(),
 			fullheight = ldr.get_full_height();
 
-		int cnt = 1;
-		for (unsigned int row = 0; row < nth; row++)
-			for (unsigned int col = 0; col < ntv; col++)
+		size_t cnt = 1;
+		for (size_t row = 0; row < ntVert; row++)
+			for (size_t col = 0; col < ntHor; col++)
 			{
 				// Fetch the tile 
 				bool ok = ldr.load_tile(row, col);
@@ -130,7 +130,7 @@ namespace Nyxus
 				// Get ahold of tile's pixel buffer
 				const std::vector<uint32_t>& dataI = ldr.get_int_tile_buffer();
 				const std::shared_ptr<std::vector<uint32_t>>& spL = ldr.get_seg_tile_sptr();
-				bool wholeslide = spL == nullptr; // alternatively, theEnvironment.singleROI
+				bool wholeslide = env.singleROI;
 
 				// Iterate pixels
 				for (unsigned long i = 0; i < tileSize; i++)
@@ -139,6 +139,11 @@ namespace Nyxus
 					PixIntens label = 1;
 					if (!wholeslide)
 						label = (*spL)[i];
+
+					// Merge all foreground labels into a single ROI if requested (must
+					// happen before the white-list test: only the merged label 1 is pending)
+					if (env.mergeLabels && label)
+						label = 1;
 
 					// Skip this ROI if the label isn't in the pending set of a multi-ROI mode
 					if (! env.singleROI && ! std::binary_search(whiteList.begin(), whiteList.end(), label))
@@ -162,10 +167,10 @@ namespace Nyxus
 					if (cnt++ % 4 == 0)
 					{
 						static int prevIntPc = 0;
-						float pc = int((row * nth + col) * 100 / float(nth * ntv) * 100) / 100.;
+						float pc = Nyxus::round2(100. * float(row * ntHor + col) / float(ntHor * ntVert));
 						if (int(pc) != prevIntPc)
 						{
-							std::cout << "\t scan trivial " << int(pc) << " %\n";
+							std::cout << "\t" << "scan trivial " << int(pc) << " % \n";
 							prevIntPc = int(pc);
 						}
 					}
@@ -192,8 +197,8 @@ namespace Nyxus
 			lyr = 0;	//	layer
 
 		// physical slide properties
-		size_t nth = ldr.get_num_tiles_hor(),
-			ntv = ldr.get_num_tiles_vert(),
+		size_t ntHor = ldr.get_num_tiles_hor(),
+			ntVert = ldr.get_num_tiles_vert(),
 			fw = ldr.get_tile_width(),
 			th = ldr.get_tile_height(),
 			tw = ldr.get_tile_width(),
@@ -249,7 +254,7 @@ namespace Nyxus
 				// read buffered physical pixel 
 				const std::vector<uint32_t>& dataI = ldr.get_int_tile_buffer();
 				const std::shared_ptr<std::vector<uint32_t>>& spL = ldr.get_seg_tile_sptr();
-				bool wholeslide = spL == nullptr; // alternatively, theEnvironment.singleROI
+				bool wholeslide = env.singleROI;
 
 				PixIntens label = 1;
 				if (!wholeslide)
@@ -258,6 +263,10 @@ namespace Nyxus
 				// not a ROI ?
 				if (!label)
 					continue;
+
+				// Merge all foreground labels into a single ROI if requested
+				if (env.mergeLabels)
+					label = 1;
 
 				// skip this ROI if the label isn't in the to-do list 'whiteList' that's only possible in multi-ROI mode
 				if (wholeslide==false && !std::binary_search(whiteList.begin(), whiteList.end(), label))
@@ -404,12 +413,10 @@ namespace Nyxus
 					ph_y = size_t(double(vy) / aniso_y),
 					i = ph_y * tw + ph_x;
 
-				// read buffered physical pixel 
+				// read buffered physical pixel
 				const std::vector<uint32_t>& dataI = ldr.get_int_tile_buffer();
-				const std::shared_ptr<std::vector<uint32_t>>& spL = ldr.get_seg_tile_sptr();
-				bool wholeslide = spL == nullptr; // alternatively, theEnvironment.singleROI
 
-				// Cache this pixel 
+				// Cache this pixel
 				feed_pixel_2_cache_LR (vc, vr, dataI[i], vroi);
 			}
 		}
@@ -652,6 +659,11 @@ namespace Nyxus
 				auto label = rL (pair_idx, row, col);
 				if (!label)
 					continue;
+
+				// Merge all foreground labels into a single ROI if requested (before the
+				// white-list test, which only contains the merged label 1)
+				if (env.mergeLabels)
+					label = 1;
 
 				// Skip this ROI if the label isn't in the pending set of a multi-ROI mode
 				if (! env.singleROI && !std::binary_search(whiteList.begin(), whiteList.end(), label))

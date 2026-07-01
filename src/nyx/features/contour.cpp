@@ -390,6 +390,11 @@ ContourFeature::ContourFeature() : FeatureMethod("ContourFeature")
 	int h,
 	int verbose)
 {
+	// This function fills the caller-owned contour container from scratch.
+	// Clearing it up front prevents stale contours from surviving the early
+	// return below when a ROI degenerates to isolated speckles.
+	multicountour.clear();
+
 	const int BLANK = 0;
 	bool inside = false;
 	int pos = 0;
@@ -583,26 +588,29 @@ ContourFeature::ContourFeature() : FeatureMethod("ContourFeature")
 	// U - unordered subset of C subject to order
 	// S - ordered subset of C
 
-	std::list<Pixel2> U (C.begin(), C.end());
-
+	
 	// fix X-crossing points
+
+	std::vector<Pixel2> C_fix = C;
 	int n_xxings = 0;
-	for (Pixel2 p : U)
+	for (const Pixel2& p : C)
 	{
-		Pixel2 pN (p.x, p.y-1, p.inten),
-			pS (p.x, p.y+1, p.inten),
-			pW (p.x-1, p.y, p.inten),
-			pE (p.x+1, p.y, p.inten);
-		auto itN = std::find(U.begin(), U.end(), pN);
-		auto itS = std::find(U.begin(), U.end(), pS);
-		auto itE = std::find(U.begin(), U.end(), pE);
-		auto itW = std::find(U.begin(), U.end(), pW);
-		if (itN != U.end() && itS != U.end() && itW != U.end() && itE != U.end())
+		Pixel2 pN (p.x, p.y - 1, p.inten),
+			pS (p.x, p.y + 1, p.inten),
+			pW (p.x - 1, p.y, p.inten),
+			pE (p.x + 1, p.y, p.inten);
+		auto itN = std::find (C_fix.begin(), C_fix.end(), pN);
+		auto itS = std::find (C_fix.begin(), C_fix.end(), pS);
+		auto itE = std::find (C_fix.begin(), C_fix.end(), pE);
+		auto itW = std::find (C_fix.begin(), C_fix.end(), pW);
+		if (itN != C_fix.end() && itS != C_fix.end() && itW != C_fix.end() && itE != C_fix.end())
 		{
-			U.remove(p);
+			auto itP = std::find (C_fix.begin(), C_fix.end(), p);
+			C_fix.erase (itP);
 			n_xxings++;
 		}
 	}
+	std::list<Pixel2> U (C_fix.begin(), C_fix.end());
 
 	// find contour by contour
 	while (!U.empty())
@@ -645,6 +653,10 @@ ContourFeature::ContourFeature() : FeatureMethod("ContourFeature")
 		base_y = r.aabb.get_ymin();
 	int paddingColor = 0;
 	std::vector<PixIntens> paddedImage((height + 2) * (width + 2), paddingColor);
+
+	// Rebuild the contour cache from scratch for this ROI.
+	r.multicontour_.clear();
+
 	for (auto px : r.raw_pixels)
 	{
 		auto x = px.x - base_x + 1,

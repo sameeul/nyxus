@@ -27,7 +27,7 @@ import pandas as pd
 from typing import Optional, List
 
 class Nyxus:
-    """Nyxus image feature extraction library
+    r"""Nyxus image feature extraction library
 
     Scalably extracts features from images.
     
@@ -82,7 +82,11 @@ class Nyxus:
         The default value of -1 uses cpu calculations. Note that the gpu features only support a single 
         thread for feature calculation. 
     ibsi: bool (optional, default false)
-       IBSI available features will be IBSI compliant when true.
+       IBSI available features will be IBSI compliant when true. Required to enable
+       the Intensity Histogram (IH_*) feature family (*ALL_IH*).
+    mergerois: bool (optional, default false)
+       Merge all nonzero mask labels into a single whole-foreground ROI (background
+       excluded) instead of one ROI per label.
     gabor_kersize: int (optional, default 16)
         Size of filter kernel's side
     gabor_gamma: float (optional, default 0.1)
@@ -134,7 +138,7 @@ class Nyxus:
             'gabor_thold', 'gabor_thetas', 'gabor_freqs', 'channel_signature', 
             'parent_channel', 'child_channel', 'aggregate', 'dynamic_range', 'min_intensity',
             'max_intensity', 'ram_limit', 'verbose',
-            'anisotropy_x', 'anisotropy_y'
+            'anisotropy_x', 'anisotropy_y', 'mergerois'
         }
 
         # Check for unexpected keyword arguments
@@ -190,6 +194,7 @@ class Nyxus:
             raise ValueError ("anisotropy_y must be positive")
 
         aniso_z = 1.0   # not used in 2D
+        mergerois = kwargs.get('mergerois', False)
 
         initialize_environment(
             id(self),
@@ -197,7 +202,7 @@ class Nyxus:
             features,
             neighbor_distance,
             pixels_per_micron,
-            coarse_gray_depth, 
+            coarse_gray_depth,
             n_feature_calc_threads,
             use_gpu_device,
             ibsi,
@@ -209,7 +214,8 @@ class Nyxus:
             verb_lvl,
             aniso_x,
             aniso_y,
-            aniso_z) 
+            aniso_z,
+            mergerois)
 
         self.set_gabor_feature_params(
             kersize = gabor_kersize,
@@ -426,14 +432,14 @@ class Nyxus:
         if (intensity_names == []):
             int_name = "Intensity"
             
-            for i in range(intensity_images.shape[0]):
-                intensity_names.append(int_name + str(i))
+            # Rebind to a fresh list (do NOT mutate the shared default arg)
+            intensity_names = [int_name + str(i) for i in range(intensity_images.shape[0])]
        
         if (label_names == []):
             seg_name = "Segmentation"
             
-            for i in range(label_images.shape[0]):
-                label_names.append(seg_name + str(i))
+            # Rebind to a fresh list (do NOT mutate the shared default arg)
+            label_names = [seg_name + str(i) for i in range(label_images.shape[0])]
                 
         if (intensity_images.shape[0] != len(intensity_names)):
             raise ValueError ("Number of _intensity image names_ (" + str(len(intensity_names)) + ") must be the same as the number of intensity images (" + str(intensity_images.shape[0]) + ")")
@@ -446,8 +452,8 @@ class Nyxus:
         min_raw_I = np.min (intensity_images)
         if (min_raw_I < 0):
             I -= min_raw_I
-        if (not isinstance(I.flat[0], np.uint32)):
-            I = I.astype (np.uint32)
+        if I.dtype != np.uint32:
+            I = I.astype(np.uint32)
 
         # cast mask data to unsigned integer, too
         M = label_images.astype (np.uint32)
@@ -525,15 +531,17 @@ class Nyxus:
         if intensity_files is None:
             raise IOError ("The list of intensity file paths is empty")
 
-        if mask_files is None:
-            raise IOError ("The list of segment file paths is empty")
-        
+        if mask_files is None and not single_roi:
+            raise IOError ("The list of segment file paths is empty. Supply mask images or set single_roi to True")
+
         if (output_type not in self._valid_output_types):
             raise  ValueError(f'Invalid output type {output_type}. Valid output types are {self._valid_output_types}')
 
+        mask_files_arg = mask_files if mask_files is not None else []
+
         if (output_type == 'pandas'):
             
-            header, string_data, numeric_data = featurize_fname_lists_imp (id(self), intensity_files, mask_files, single_roi, output_type, "")
+            header, string_data, numeric_data = featurize_fname_lists_imp (id(self), intensity_files, mask_files_arg, single_roi, output_type, "")
 
             df = pd.concat(
                 [
@@ -548,10 +556,10 @@ class Nyxus:
                 df.ROI_label = df.ROI_label.astype(np.uint32)
 
             return df
-        
+
         else:
             
-            featurize_fname_lists_imp (id(self), intensity_files, mask_files, single_roi, output_type, output_path)
+            featurize_fname_lists_imp (id(self), intensity_files, mask_files_arg, single_roi, output_type, output_path)
             return get_arrow_file_imp (id(self))
 
 
@@ -612,7 +620,7 @@ class Nyxus:
         return s
     
     def set_gabor_feature_params (self, **kwargs):
-        """Sets parameters of feature GABOR
+        r"""Sets parameters of feature GABOR
 
         Keyword args:
         * kersize (int): size of filter kernel's side. Example: customize_gabor_feature(kersize=16)
@@ -729,7 +737,7 @@ class Nyxus:
                                    verb_lvl)
         
     def set_params(self, **params):
-        """Sets parameters of the Nyxus class
+        r"""Sets parameters of the Nyxus class
 
         Keyword args:
         
@@ -793,7 +801,7 @@ class Nyxus:
 
 
     def get_params(self, *args):
-        """Returns the parameters of a Nyxus object. If no args are supplied, all parameters will be returned.
+        r"""Returns the parameters of a Nyxus object. If no args are supplied, all parameters will be returned.
         
         Valid parameters are:
         
@@ -1023,7 +1031,7 @@ class Nyxus3D:
             features,
             neighbor_distance,
             pixels_per_micron,
-            coarse_gray_depth, 
+            coarse_gray_depth,
             n_feature_calc_threads,
             use_gpu_device,
             ibsi,
@@ -1035,7 +1043,8 @@ class Nyxus3D:
             verb_lvl,
             aniso_x,
             aniso_y,
-            aniso_z)
+            aniso_z,
+            False)  # merge_labels: 2D-segmented only
         
         # list of valid outputs that are used throughout featurize functions
         self._valid_output_types = ['pandas', 'arrowipc', 'parquet']
@@ -1290,7 +1299,7 @@ class Nyxus3D:
                                    verb_lvl)
         
     def set_params(self, **params):
-        """Sets parameters of the Nyxus class
+        r"""Sets parameters of the Nyxus class
 
         Keyword args:
         
@@ -1341,7 +1350,7 @@ class Nyxus3D:
             self.set_environment_params(**environment_params)
     
     def get_params(self, *args):
-        """Returns the parameters of a Nyxus object. If no args are supplied, all parameters will be returned.
+        r"""Returns the parameters of a Nyxus object. If no args are supplied, all parameters will be returned.
         
         Valid parameters are:
         
@@ -1550,7 +1559,7 @@ class ImageQuality:
             features,
             neighbor_distance,
             pixels_per_micron,
-            coarse_gray_depth, 
+            coarse_gray_depth,
             n_feature_calc_threads,
             using_gpu,
             ibsi,
@@ -1562,7 +1571,8 @@ class ImageQuality:
             verb_lvl,
             aniso_x,
             aniso_y,
-            aniso_z)
+            aniso_z,
+            False)  # merge_labels: 2D-segmented only
         
         # list of valid outputs that are used throughout featurize functions
         self._valid_output_types = ['pandas', 'arrowipc', 'parquet']
@@ -1732,15 +1742,15 @@ class ImageQuality:
         if (intensity_names == []):
             int_name = "Intensity"
             
-            for i in range(intensity_images.shape[0]):
-                intensity_names.append(int_name + str(i))
+            # Rebind to a fresh list (do NOT mutate the shared default arg)
+            intensity_names = [int_name + str(i) for i in range(intensity_images.shape[0])]
         
         
         if (label_names == []):
             seg_name = "Segmentation"
             
-            for i in range(label_images.shape[0]):
-                label_names.append(seg_name + str(i))
+            # Rebind to a fresh list (do NOT mutate the shared default arg)
+            label_names = [seg_name + str(i) for i in range(label_images.shape[0])]
                 
         if (intensity_images.shape[0] != len(intensity_names)):
             raise ValueError("Number of image names must be the same as the number of images.")
@@ -1908,7 +1918,7 @@ class ImageQuality:
         return s
     
     def set_gabor_feature_params (self, **kwargs):
-        """Sets parameters of feature GABOR
+        r"""Sets parameters of feature GABOR
 
         Keyword args:
         * kersize (int): size of filter kernel's side. Example: customize_gabor_feature(kersize=16)
@@ -2024,7 +2034,7 @@ class ImageQuality:
                                    verb_lvl)
         
     def set_params(self, **params):
-        """Sets parameters of the Nyxus class
+        r"""Sets parameters of the Nyxus class
 
         Keyword args:
         
@@ -2088,7 +2098,7 @@ class ImageQuality:
             self.set_environment_params(**environment_params)
     
     def get_params(self, *args):
-        """Returns the parameters of a Nyxus object. If no args are supplied, all parameters will be returned.
+        r"""Returns the parameters of a Nyxus object. If no args are supplied, all parameters will be returned.
         
         Valid parameters are:
         
@@ -2124,7 +2134,7 @@ class ImageQuality:
 
 
 class Nested:
-    """Nyxus image feature extraction library / ROI hierarchy analyzer
+    r"""Nyxus image feature extraction library / ROI hierarchy analyzer
     
     Valid aggregate functions are any functions available in pandas.DatFrame.aggregate,
     e.g. min, max, count, std. Lambda functions can also be passed. To provide a name to
@@ -2169,7 +2179,7 @@ class Nested:
         parent_file_pattern: str, 
         child_file_pattern: str):
     
-        """Finds parent-child relationships.
+        r"""Finds parent-child relationships.
 
         Find parent-child relationships of parent files matching the parent_file_pattern
         and child files matching the child_file_pattern.

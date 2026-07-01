@@ -20,12 +20,17 @@ SETLOCAL DisableDelayedExpansion
 mkdir local_install
 mkdir local_install\include
 
+rem Absolute install prefix (forward slashes, no quotes/spaces) for find_package().
+rem Relative -DCMAKE_PREFIX_PATH=../../local_install is NOT reliably honored by
+rem find_package() config search on newer CMake, so use an absolute path.
+set "ABS_INSTALL=%CD:\=/%/local_install"
+
 curl -L https://github.com/pybind/pybind11/archive/refs/tags/v2.12.0.zip -o v2.12.0.zip
 tar -xvf v2.12.0.zip
 pushd pybind11-2.12.0
 mkdir build_man
 pushd build_man
-cmake -DCMAKE_INSTALL_PREFIX=../../local_install/  -DPYBIND11_TEST=OFF ..
+cmake -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_INSTALL_PREFIX=../../local_install/  -DPYBIND11_TEST=OFF ..
 cmake --build . --config Release --target install  
 popd
 popd
@@ -35,7 +40,7 @@ tar -xvf zlib131.zip
 pushd zlib-1.3.1
 mkdir build_man
 pushd build_man
-cmake -DCMAKE_INSTALL_PREFIX=../../local_install/ ..  
+cmake -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_INSTALL_PREFIX=../../local_install/ ..  
 cmake --build . --config Release --target install --parallel 4  
 popd
 popd
@@ -61,57 +66,27 @@ if "%BUILD_Z5_DEP%" == "1" (
     pushd c-blosc-1.21.6
     mkdir build_man
     pushd build_man
-    cmake -DCMAKE_INSTALL_PREFIX=../../local_install/ ..   
+    cmake -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_INSTALL_PREFIX=../../local_install/ ..   
     cmake --build . --config Release --target install  --parallel 4
-    popd
-    popd
-
-    curl -L https://github.com/xtensor-stack/xtl/archive/refs/tags/0.8.0.zip -o 0.8.0.zip
-    tar -xf 0.8.0.zip
-    pushd xtl-0.8.0 
-    mkdir build_man
-    pushd build_man
-    cmake -DCMAKE_INSTALL_PREFIX=../../local_install/ ..  
-    cmake --build . --config Release --target install 
-    popd
-    popd
-
-    curl -L https://github.com/xtensor-stack/xtensor/archive/refs/tags/0.26.0.zip -o 0.26.0.zip
-    tar -xf 0.26.0.zip
-    pushd xtensor-0.26.0
-    mkdir build_man
-    pushd build_man
-    cmake -DCMAKE_INSTALL_PREFIX=../../local_install/ ..  
-    cmake --build . --config Release --target install 
-    popd
-    popd
-
-    curl -L https://github.com/xtensor-stack/xsimd/archive/refs/tags/13.2.0.zip -o 13.2.0.zip
-    tar -xf 13.2.0.zip 
-    pushd xsimd-13.2.0 
-    mkdir build_man
-    pushd build_man
-    cmake -DCMAKE_INSTALL_PREFIX=../../local_install/ ..  
-    cmake --build . --config Release --target install  
     popd
     popd
 
     curl -L https://github.com/nlohmann/json/archive/refs/tags/v3.11.2.zip -o v3.11.2.zip
-    tar -xf v3.11.2.zip 
+    tar -xf v3.11.2.zip
     pushd json-3.11.2
     mkdir build_man
     pushd build_man
-    cmake -DCMAKE_INSTALL_PREFIX=../../local_install/ -DJSON_BuildTests=OFF ..  
+    cmake -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_INSTALL_PREFIX=../../local_install/ -DJSON_BuildTests=OFF ..
     cmake --build . --config Release --target install  --parallel 4
     popd
     popd
 
-    curl -L https://github.com/constantinpape/z5/archive/refs/tags/2.0.20.zip -o 2.0.20.zip
-    tar -xf 2.0.20.zip 
-    pushd z5-2.0.20
+    curl -L https://github.com/constantinpape/z5/archive/refs/tags/3.0.1.zip -o 3.0.1.zip
+    tar -xf 3.0.1.zip
+    pushd z5-3.0.1
     mkdir build_man
     pushd build_man
-    cmake -DCMAKE_INSTALL_PREFIX=../../local_install/   -DCMAKE_PREFIX_PATH=../../local_install/ -DWITH_BLOSC=ON -DBUILD_Z5PY=OFF ..
+    cmake -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_INSTALL_PREFIX=../../local_install/   -DCMAKE_PREFIX_PATH=%ABS_INSTALL% -DWITH_BLOSC=ON -DBUILD_Z5PY=OFF ..
     cmake --build . --config Release --target install  --parallel 4
     popd
     popd
@@ -127,7 +102,7 @@ if "%BUILD_ARROW%" == "1" (
     pushd cpp
     mkdir build
     pushd build
-    cmake .. -A x64 -DCMAKE_INSTALL_PREFIX=../../../local_install/ -DCMAKE_PREFIX_PATH=../../../local_install/ -DARROW_PARQUET=ON -DARROW_WITH_SNAPPY=ON -DARROW_BUILD_TESTS=OFF -DBOOST_ROOT=%_ROOTDIR%/boost_1_88_0
+    cmake .. -A x64 -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_INSTALL_PREFIX=../../../local_install/ -DCMAKE_PREFIX_PATH=%ABS_INSTALL% -DARROW_PARQUET=ON -DARROW_WITH_SNAPPY=ON -DARROW_BUILD_TESTS=OFF -DBOOST_ROOT=%_ROOTDIR%/boost_1_88_0
     cmake --build . --config Release --target install --parallel 4
     popd 
     popd
@@ -142,7 +117,7 @@ if "%BUILD_DCMTK_DEP%" == "1" (
     pushd libpng-1.6.53
     mkdir build_man
     pushd build_man
-    cmake -DCMAKE_INSTALL_PREFIX=../../local_install/   -DCMAKE_PREFIX_PATH=../../local_install/   ..
+    cmake -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_INSTALL_PREFIX=../../local_install/   -DCMAKE_PREFIX_PATH=%ABS_INSTALL%   ..
     cmake --build . --config Release --target install --parallel 4
     popd
     popd
@@ -152,7 +127,7 @@ if "%BUILD_DCMTK_DEP%" == "1" (
     pushd openjpeg-2.5.0
     mkdir build_man
     pushd build_man
-    cmake -DCMAKE_INSTALL_PREFIX=../../local_install/   -DCMAKE_PREFIX_PATH=../../local_install/  -DBUILD_CODEC=OFF  ..
+    cmake -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_INSTALL_PREFIX=../../local_install/   -DCMAKE_PREFIX_PATH=%ABS_INSTALL%  -DBUILD_CODEC=OFF  ..
     cmake --build . --config Release --target install --parallel 4
     popd
     popd
@@ -163,7 +138,7 @@ tar -xf v1.19.zip
 pushd libdeflate-1.19
 mkdir build_man
 pushd build_man
-cmake -DCMAKE_INSTALL_PREFIX=../../local_install/   -DCMAKE_PREFIX_PATH=../../local_install/  ..
+cmake -DCMAKE_INSTALL_PREFIX=../../local_install/   -DCMAKE_PREFIX_PATH=%ABS_INSTALL%  ..
 cmake --build . --config Release --target install --parallel 4
 popd
 popd
@@ -173,7 +148,7 @@ tar -xf 3.1.0.zip
 pushd libjpeg-turbo-3.1.0
 mkdir build_man
 pushd build_man
-cmake -DCMAKE_INSTALL_PREFIX=../../local_install/   -DCMAKE_PREFIX_PATH=../../local_install/  ..
+cmake -DCMAKE_INSTALL_PREFIX=../../local_install/   -DCMAKE_PREFIX_PATH=%ABS_INSTALL%  ..
 cmake --build . --config Release --target install --parallel 4
 popd
 popd
@@ -189,7 +164,7 @@ tar -xf tiff-4.7.0.zip
 pushd tiff-4.7.0
 mkdir build_man
 pushd build_man
-cmake -DCMAKE_INSTALL_PREFIX=../../local_install/   -DCMAKE_PREFIX_PATH=../../local_install/  ..
+cmake -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_INSTALL_PREFIX=../../local_install/   -DCMAKE_PREFIX_PATH=%ABS_INSTALL%  ..
 cmake --build . --config Release --target install
 popd
 popd
@@ -205,7 +180,7 @@ if "%BUILD_DCMTK_DEP%" == "1" (
     pushd dcmtk-DCMTK-3.6.9
     mkdir build_man
     pushd build_man
-    cmake -DCMAKE_INSTALL_PREFIX=../../local_install/ -DCMAKE_PREFIX_PATH=../../local_install/ -DBUILD_SHARED_LIBS=ON -DDCMTK_WITH_ICONV=OFF -DDCMTK_WITH_TIFF=ON -DWITH_LIBTIFFINC=../../local_install -DDCMTK_WITH_PNG=ON -DWITH_LIBPNGINC=../../local_install -DDCMTK_WITH_ZLIB=ON -DWITH_ZLIBINC=../../local_install -DDCMTK_WITH_OPENJPEG=ON -DWITH_OPENJPEGINC=../../local_install  -DBUILD_APPS=OFF ..
+    cmake -DCMAKE_INSTALL_PREFIX=../../local_install/ -DCMAKE_PREFIX_PATH=%ABS_INSTALL% -DBUILD_SHARED_LIBS=ON -DDCMTK_WITH_ICONV=OFF -DDCMTK_WITH_TIFF=ON -DWITH_LIBTIFFINC=../../local_install -DDCMTK_WITH_PNG=ON -DWITH_LIBPNGINC=../../local_install -DDCMTK_WITH_ZLIB=ON -DWITH_ZLIBINC=../../local_install -DDCMTK_WITH_OPENJPEG=ON -DWITH_OPENJPEGINC=../../local_install  -DBUILD_APPS=OFF ..
     cmake --build . --config Release --target install --parallel 4
     popd
     popd
@@ -215,7 +190,7 @@ if "%BUILD_DCMTK_DEP%" == "1" (
     pushd fmjpeg2koj-fix_cmake
     mkdir build_man
     pushd build_man
-    cmake -DBUILD_SHARED_LIBS=ON -DCMAKE_CXX_FLAGS_RELEASE="/MT /O2 /D NDEBUG /Zc:__cplusplus" -DCMAKE_INSTALL_PREFIX=../../local_install/   -DCMAKE_PREFIX_PATH=../../local_install/  -DFMJPEG2K=%ROOTDIR%\local_install\  ..
+    cmake -DBUILD_SHARED_LIBS=ON -DCMAKE_CXX_FLAGS_RELEASE="/MT /O2 /D NDEBUG /Zc:__cplusplus" -DCMAKE_INSTALL_PREFIX=../../local_install/   -DCMAKE_PREFIX_PATH=%ABS_INSTALL%  -DFMJPEG2K=%ROOTDIR%\local_install\  ..
     cmake --build . --config Release --target install --parallel 4
     popd
     popd

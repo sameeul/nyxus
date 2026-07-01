@@ -93,48 +93,18 @@ if [[ $BUILD_Z5_DEP -eq 1 ]]; then
     cmake --build . --target install 
     cd ../../
 
-    curl -L https://github.com/xtensor-stack/xtl/archive/refs/tags/0.8.0.zip -o 0.8.0.zip
-    unzip 0.8.0.zip
-    cd xtl-0.8.0 
-    mkdir build_man
-    cd build_man
-    cmake -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_INSTALL_PREFIX=../../"$LOCAL_INSTALL_DIR"/ ..  
-    cmake --build . 
-    cmake --build . --target install 
-    cd ../../
-
-    curl -L https://github.com/xtensor-stack/xtensor/archive/refs/tags/0.26.0.zip -o 0.26.0.zip
-    unzip 0.26.0.zip
-    cd xtensor-0.26.0
-    mkdir build_man
-    cd build_man
-    cmake -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_INSTALL_PREFIX=../../"$LOCAL_INSTALL_DIR"/ ..  
-    cmake --build . 
-    cmake --build . --target install 
-    cd ../../
-
-    curl -L https://github.com/xtensor-stack/xsimd/archive/refs/tags/13.2.0.zip -o 13.2.0.zip
-    unzip 13.2.0.zip 
-    cd xsimd-13.2.0 
-    mkdir build_man
-    cd build_man
-    cmake -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_INSTALL_PREFIX=../../"$LOCAL_INSTALL_DIR"/ ..  
-    cmake --build . 
-    cmake --build . --target install 
-    cd ../../
-
     curl -L https://github.com/nlohmann/json/archive/refs/tags/v3.11.2.zip -o v3.11.2.zip
-    unzip v3.11.2.zip 
+    unzip v3.11.2.zip
     cd json-3.11.2
     mkdir build_man
     cd build_man
-    cmake -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_INSTALL_PREFIX=../../"$LOCAL_INSTALL_DIR"/ ..  
+    cmake -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_INSTALL_PREFIX=../../"$LOCAL_INSTALL_DIR"/ ..
     make install/fast
     cd ../../
 
-    curl -L https://github.com/constantinpape/z5/archive/refs/tags/2.0.20.zip -o 2.0.20.zip
-    unzip 2.0.20.zip
-    cd z5-2.0.20
+    curl -L https://github.com/constantinpape/z5/archive/refs/tags/3.0.1.zip -o 3.0.1.zip
+    unzip 3.0.1.zip
+    cd z5-3.0.1
     mkdir build_man
     cd build_man
     cmake -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_INSTALL_PREFIX=../../"$LOCAL_INSTALL_DIR"/   -DCMAKE_PREFIX_PATH=../../"$LOCAL_INSTALL_DIR"/ -DWITH_BLOSC=ON -DBUILD_Z5PY=OFF  ..

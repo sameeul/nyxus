@@ -4,7 +4,12 @@
 #include "../src/nyx/globals.h"
 #include "test_contour.h"
 #include "test_pixel_intensity_features.h"
+#include "test_intensity_histogram.h"
 #include "test_morphology_features.h"
+#include "test_shape_morphology_2d.h"
+#include "test_2d_geometric_moments.h"
+#include "test_2d_remaining_features.h"
+#include "test_neighbors_2d.h"
 #include "test_initialization.h"
 #include "test_ibsi_glcm.h"
 #include "test_ibsi_gldm.h"
@@ -31,6 +36,7 @@
 #include "test_compat_3d_ngtdm.h"
 #include "test_compat_3d_glrlm.h"
 #include "test_compat_3d_glszm.h"
+#include "test_3d_feature_coverage.h"
 #ifdef USE_ARROW
     #include "test_arrow.h"
     #include "test_arrow_file_name.h"
@@ -663,11 +669,11 @@ TEST(TEST_NYXUS, TEST_3NGLDM_DCENE) {
 
 //***** Gabor regression ***** 
 
-TEST(TEST_NYXUS, TEST_GABOR){
-    test_gabor();
-	
+TEST(TEST_NYXUS, TEST_UNVETTED_NO_DIRECT_ORACLE_GABOR){
+    test_unvetted_no_direct_oracle_gabor();
+
     #ifdef USE_GPU
-        test_gabor(true);
+        test_unvetted_no_direct_oracle_gabor(true);
     #endif
 }
 
@@ -701,6 +707,11 @@ TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_MEAN)
 	ASSERT_NO_THROW(test_pixel_intensity_mean());
 }
 
+TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_COV)
+{
+	ASSERT_NO_THROW(test_pixel_intensity_cov());
+}
+
 TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_MEDIAN) 
 {
 	ASSERT_NO_THROW(test_pixel_intensity_median());
@@ -716,29 +727,91 @@ TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_STDDEV)
 	ASSERT_NO_THROW(test_pixel_intensity_standard_deviation());
 }
 
+TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_STDDEV_BIASED)
+{
+	ASSERT_NO_THROW(test_pixel_intensity_standard_deviation_biased());
+}
+
+TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_VARIANCE)
+{
+	ASSERT_NO_THROW(test_pixel_intensity_variance());
+}
+
+//***** IBSI Intensity Histogram (IH) family *****
+
+TEST(TEST_NYXUS, TEST_IH_INTEGER_DOMAIN_VALUES)
+{
+	ASSERT_NO_THROW(test_ih_integer_domain_values());
+}
+
+TEST(TEST_NYXUS, TEST_IH_INDEX_AND_PERCENTILE_BOUNDS)
+{
+	ASSERT_NO_THROW(test_ih_index_and_percentile_bounds());
+}
+
+TEST(TEST_NYXUS, TEST_IH_IBSI_GATE_OFF_RETURNS_NAN)
+{
+	ASSERT_NO_THROW(test_ih_ibsi_gate_off_returns_nan());
+}
+
+TEST(TEST_NYXUS, TEST_IH_FLOAT_DOMAIN_RECONSTRUCTION)
+{
+	ASSERT_NO_THROW(test_ih_float_domain_reconstruction());
+}
+
+TEST(TEST_NYXUS, TEST_IH_REQUIRED_PREDICATE)
+{
+	ASSERT_NO_THROW(test_ih_required_predicate());
+}
+
+TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_VARIANCE_BIASED)
+{
+	ASSERT_NO_THROW(test_pixel_intensity_variance_biased());
+}
+
 TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_SKEWNESS) 
 {
 	ASSERT_NO_THROW(test_pixel_intensity_skewness());
 }
 
-TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_KURTOSIS) 
+TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_EXCESS_KURTOSIS)
 {
 	ASSERT_NO_THROW(test_pixel_intensity_kurtosis());
 }
 
-TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_HYPERSKEWNESS) 
+TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_KURTOSIS)
 {
-	ASSERT_NO_THROW(test_pixel_intensity_hyperskewness());
+	ASSERT_NO_THROW(test_pixel_intensity_pearson_kurtosis());
 }
 
-TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_HYPERFLATNESS) 
+TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_VERIFIABLE_WITH_3P_BUILTIN_ORACLE_HYPERSKEWNESS)
 {
-	ASSERT_NO_THROW(test_pixel_intensity_hyperflatness());
+	ASSERT_NO_THROW(test_pixel_intensity_verifiable_with_3p_builtin_oracle_hyperskewness());
+}
+
+TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_VERIFIABLE_WITH_3P_BUILTIN_ORACLE_HYPERFLATNESS)
+{
+	ASSERT_NO_THROW(test_pixel_intensity_verifiable_with_3p_builtin_oracle_hyperflatness());
 }
 
 TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_MAD) 
 {
 	ASSERT_NO_THROW(test_pixel_intensity_mean_absolute_deviation());
+}
+
+TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_MEDIAN_ABSOLUTE_DEVIATION)
+{
+	ASSERT_NO_THROW(test_pixel_intensity_median_absolute_deviation());
+}
+
+TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_VERIFIABLE_WITH_3P_BUILTIN_ORACLE_ROBUST_MEAN)
+{
+	ASSERT_NO_THROW(test_pixel_intensity_verifiable_with_3p_builtin_oracle_robust_mean());
+}
+
+TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_ROBUST_MAD)
+{
+	ASSERT_NO_THROW(test_pixel_intensity_robust_mean_absolute_deviation());
 }
 
 TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_STANDARD_ERROR) 
@@ -766,9 +839,24 @@ TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_UNIFORMITY)
 	ASSERT_NO_THROW(test_pixel_intensity_uniformity());
 }
 
-TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_UNIFORMITY_PIU) 
+TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_VERIFIABLE_WITH_3P_BUILTIN_ORACLE_UNIFORMITY_PIU)
 {
-	ASSERT_NO_THROW(test_pixel_intensity_uniformity_piu());
+	ASSERT_NO_THROW(test_pixel_intensity_verifiable_with_3p_builtin_oracle_uniformity_piu());
+}
+
+TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_PERCENTILES_IQR)
+{
+	ASSERT_NO_THROW(test_pixel_intensity_percentiles_iqr());
+}
+
+TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_QCOD)
+{
+	ASSERT_NO_THROW(test_pixel_intensity_qcod());
+}
+
+TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_VERIFIABLE_WITH_3P_BUILTIN_ORACLE_COVERED_IMAGE_INTENSITY_RANGE)
+{
+	ASSERT_NO_THROW(test_pixel_intensity_verifiable_with_3p_builtin_oracle_covered_image_intensity_range());
 }
 
 
@@ -777,6 +865,131 @@ TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_UNIFORMITY_PIU)
 TEST(TEST_NYXUS, TEST_MORPHOLOGY_PERIMETER) 
 {
 	ASSERT_NO_THROW(test_morphology_perimeter());
+}
+
+TEST(TEST_NYXUS, TEST_SHAPE2D_BASIC_MORPHOLOGY_FEATURES)
+{
+	ASSERT_NO_THROW(test_shape2d_basic_morphology_features());
+}
+
+TEST(TEST_NYXUS, TEST_SHAPE2D_ELLIPSE_FEATURES)
+{
+	ASSERT_NO_THROW(test_shape2d_ellipse_features());
+}
+
+TEST(TEST_NYXUS, TEST_SHAPE2D_CONTOUR_FEATURES)
+{
+	ASSERT_NO_THROW(test_shape2d_contour_features());
+}
+
+TEST(TEST_NYXUS, TEST_SHAPE2D_VERIFIABLE_WITH_3P_BUILTIN_ORACLE_CONTOUR_DIAMETER_EQUAL_PERIMETER)
+{
+	ASSERT_NO_THROW(test_shape2d_verifiable_with_3p_builtin_oracle_contour_diameter_equal_perimeter());
+}
+
+TEST(TEST_NYXUS, TEST_SHAPE2D_CONVEX_HULL_FEATURES)
+{
+	ASSERT_NO_THROW(test_shape2d_convex_hull_features());
+}
+
+TEST(TEST_NYXUS, TEST_SHAPE2D_VERIFIABLE_WITH_3P_BUILTIN_ORACLE_EXTREMA_FEATURES)
+{
+	ASSERT_NO_THROW(test_shape2d_verifiable_with_3p_builtin_oracle_extrema_features());
+}
+
+TEST(TEST_NYXUS, TEST_SHAPE2D_MISC_FEATURES)
+{
+	ASSERT_NO_THROW(test_shape2d_misc_shape_features());
+}
+
+TEST(TEST_NYXUS, TEST_SHAPE2D_VERIFIABLE_WITH_3P_BUILTIN_ORACLE_FRACTAL_CIRCLE_FEATURES)
+{
+	ASSERT_NO_THROW(test_shape2d_verifiable_with_3p_builtin_oracle_fractal_circle_features());
+}
+
+TEST(TEST_NYXUS, TEST_SHAPE2D_UNVETTED_NO_DIRECT_ORACLE_RADIUS_FEATURES)
+{
+	ASSERT_NO_THROW(test_shape2d_unvetted_no_direct_oracle_radius_features());
+}
+
+TEST(TEST_NYXUS, TEST_2D_SHAPE_GEOMETRIC_MOMENTS_VERIFIABLE_WITH_3P_BUILTIN_ORACLE)
+{
+	ASSERT_NO_THROW(test_2d_shape_geometric_moments_verifiable_with_3p_builtin_oracle());
+}
+
+TEST(TEST_NYXUS, TEST_2D_SHAPE_GEOMETRIC_MOMENTS_UNVETTED_NO_DIRECT_ORACLE)
+{
+	ASSERT_NO_THROW(test_2d_shape_geometric_moments_unvetted_no_direct_oracle());
+}
+
+TEST(TEST_NYXUS, TEST_2D_INTENSITY_GEOMETRIC_MOMENTS_VERIFIABLE_WITH_3P_BUILTIN_ORACLE)
+{
+	ASSERT_NO_THROW(test_2d_intensity_geometric_moments_verifiable_with_3p_builtin_oracle());
+}
+
+TEST(TEST_NYXUS, TEST_2D_INTENSITY_GEOMETRIC_MOMENTS_UNVETTED_NO_DIRECT_ORACLE)
+{
+	ASSERT_NO_THROW(test_2d_intensity_geometric_moments_unvetted_no_direct_oracle());
+}
+
+TEST(TEST_NYXUS, TEST_SHAPE2D_VERIFIABLE_WITH_3P_BUILTIN_ORACLE_GEODETIC_THICKNESS_EROSION)
+{
+	ASSERT_NO_THROW(test_shape2d_verifiable_with_3p_builtin_oracle_geodetic_thickness_erosion_features());
+}
+
+TEST(TEST_NYXUS, TEST_REMAINING2D_VERIFIABLE_WITH_3P_BUILTIN_ORACLE_EROSION_COMPLEMENT)
+{
+	ASSERT_NO_THROW(test_remaining2d_verifiable_with_3p_builtin_oracle_erosion_complement_feature());
+}
+
+TEST(TEST_NYXUS, TEST_REMAINING2D_VERIFIABLE_WITH_3P_BUILTIN_ORACLE_CALIPER_FEATURES)
+{
+	ASSERT_NO_THROW(test_remaining2d_verifiable_with_3p_builtin_oracle_caliper_features());
+}
+
+TEST(TEST_NYXUS, TEST_REMAINING2D_VERIFIABLE_WITH_3P_BUILTIN_ORACLE_CHORD_STAT_FEATURES)
+{
+	ASSERT_NO_THROW(test_remaining2d_verifiable_with_3p_builtin_oracle_chord_stat_features());
+}
+
+TEST(TEST_NYXUS, TEST_REMAINING2D_UNVETTED_NO_DIRECT_ORACLE_CHORD_ANGLE_FEATURES)
+{
+	ASSERT_NO_THROW(test_remaining2d_unvetted_no_direct_oracle_chord_angle_features());
+}
+
+TEST(TEST_NYXUS, TEST_REMAINING2D_UNVETTED_NO_DIRECT_ORACLE_POLYGONALITY_HEXAGONALITY)
+{
+	ASSERT_NO_THROW(test_remaining2d_unvetted_no_direct_oracle_polygonality_hexagonality_features());
+}
+
+TEST(TEST_NYXUS, TEST_REMAINING2D_UNVETTED_NO_DIRECT_ORACLE_RADIAL_DISTRIBUTION)
+{
+	ASSERT_NO_THROW(test_remaining2d_unvetted_no_direct_oracle_radial_distribution_features());
+}
+
+TEST(TEST_NYXUS, TEST_REMAINING2D_VERIFIABLE_WITH_3P_BUILTIN_ORACLE_ZERNIKE2D)
+{
+	ASSERT_NO_THROW(test_remaining2d_verifiable_with_3p_builtin_oracle_zernike2d_feature());
+}
+
+TEST(TEST_NYXUS, TEST_NEIGHBORHOOD2D_COUNTS_TOUCHING)
+{
+	ASSERT_NO_THROW(test_neighborhood2d_counts_and_touching());
+}
+
+TEST(TEST_NYXUS, TEST_NEIGHBORHOOD2D_CLOSEST_NEIGHBORS)
+{
+	ASSERT_NO_THROW(test_neighborhood2d_closest_neighbors());
+}
+
+TEST(TEST_NYXUS, TEST_NEIGHBORHOOD2D_UNVETTED_NO_DIRECT_ORACLE_CLOSEST_NEIGHBOR_ANGLES)
+{
+	ASSERT_NO_THROW(test_neighborhood2d_unvetted_no_direct_oracle_closest_neighbor_angles());
+}
+
+TEST(TEST_NYXUS, TEST_NEIGHBORHOOD2D_UNVETTED_NO_DIRECT_ORACLE_ANGLE_STATS)
+{
+	ASSERT_NO_THROW(test_neighborhood2d_unvetted_no_direct_oracle_neighbor_angle_stats());
 }
 
 
@@ -938,6 +1151,304 @@ TEST(TEST_NYXUS, TEST_IBSI_GLCM_SUM_VARIANCE)
 TEST(TEST_NYXUS, TEST_IBSI_GLCM_SUM_ENTROPY)
 {
 	ASSERT_NO_THROW(test_ibsi_glcm_sum_entropy());
+}
+
+
+//***** 2D GLCM regression ***** 
+
+TEST(TEST_NYXUS, TEST_GLCM_ACOR)
+{
+	ASSERT_NO_THROW(test_glcm_ACOR());
+}
+
+TEST(TEST_NYXUS, TEST_GLCM_ASM)
+{
+	ASSERT_NO_THROW(test_glcm_angular_2d_moment());
+}
+
+TEST(TEST_NYXUS, TEST_GLCM_CLUPROM)
+{
+	ASSERT_NO_THROW(test_glcm_CLUPROM());
+}
+
+TEST(TEST_NYXUS, TEST_GLCM_CLUSHADE)
+{
+	ASSERT_NO_THROW(test_glcm_CLUSHADE());
+}
+
+TEST(TEST_NYXUS, TEST_GLCM_CLUTEND)
+{
+	ASSERT_NO_THROW(test_glcm_CLUTEND());
+}
+
+TEST(TEST_NYXUS, TEST_GLCM_CONTRAST)
+{
+	ASSERT_NO_THROW(test_glcm_contrast());
+}
+
+TEST(TEST_NYXUS, TEST_GLCM_CORRELATION)
+{
+	ASSERT_NO_THROW(test_glcm_correlation());
+}
+
+TEST(TEST_NYXUS, TEST_GLCM_DIFAVE)
+{
+	ASSERT_NO_THROW(test_glcm_difference_average());
+}
+
+TEST(TEST_NYXUS, TEST_GLCM_DIFENTRO)
+{
+	ASSERT_NO_THROW(test_glcm_difference_entropy());
+}
+
+TEST(TEST_NYXUS, TEST_GLCM_DIFVAR)
+{
+	ASSERT_NO_THROW(test_glcm_difference_variance());
+}
+
+TEST(TEST_NYXUS, TEST_GLCM_DIS)
+{
+	ASSERT_NO_THROW(test_glcm_DIS());
+}
+
+TEST(TEST_NYXUS, TEST_GLCM_ENERGY)
+{
+	ASSERT_NO_THROW(test_glcm_energy());
+}
+
+TEST(TEST_NYXUS, TEST_GLCM_ENTROPY)
+{
+	ASSERT_NO_THROW(test_glcm_entropy());
+}
+
+TEST(TEST_NYXUS, TEST_GLCM_HOM1)
+{
+	ASSERT_NO_THROW(test_glcm_hom1());
+}
+
+TEST(TEST_NYXUS, TEST_GLCM_HOM2)
+{
+	ASSERT_NO_THROW(test_glcm_hom2());
+}
+
+TEST(TEST_NYXUS, TEST_GLCM_ID)
+{
+	ASSERT_NO_THROW(test_glcm_ID());
+}
+
+TEST(TEST_NYXUS, TEST_GLCM_IDN)
+{
+	ASSERT_NO_THROW(test_glcm_IDN());
+}
+
+TEST(TEST_NYXUS, TEST_GLCM_IDM)
+{
+	ASSERT_NO_THROW(test_glcm_IDM());
+}
+
+TEST(TEST_NYXUS, TEST_GLCM_IDMN)
+{
+	ASSERT_NO_THROW(test_glcm_IDMN());
+}
+
+TEST(TEST_NYXUS, TEST_GLCM_INFOMEAS1)
+{
+	ASSERT_NO_THROW(test_glcm_infomeas1());
+}
+
+TEST(TEST_NYXUS, TEST_GLCM_INFOMEAS2)
+{
+	ASSERT_NO_THROW(test_glcm_infomeas2());
+}
+
+TEST(TEST_NYXUS, TEST_GLCM_IV)
+{
+	ASSERT_NO_THROW(test_glcm_IV());
+}
+
+TEST(TEST_NYXUS, TEST_GLCM_JAVE)
+{
+	ASSERT_NO_THROW(test_glcm_JAVE());
+}
+
+TEST(TEST_NYXUS, TEST_GLCM_JE)
+{
+	ASSERT_NO_THROW(test_glcm_JE());
+}
+
+TEST(TEST_NYXUS, TEST_GLCM_JMAX)
+{
+	ASSERT_NO_THROW(test_glcm_JMAX());
+}
+
+TEST(TEST_NYXUS, TEST_GLCM_JVAR)
+{
+	ASSERT_NO_THROW(test_glcm_JVAR());
+}
+
+TEST(TEST_NYXUS, TEST_GLCM_SUMAVERAGE)
+{
+	ASSERT_NO_THROW(test_glcm_sum_average());
+}
+
+TEST(TEST_NYXUS, TEST_GLCM_SUMENTROPY)
+{
+	ASSERT_NO_THROW(test_glcm_sum_entropy());
+}
+
+TEST(TEST_NYXUS, TEST_GLCM_SUMVARIANCE)
+{
+	ASSERT_NO_THROW(test_glcm_sum_variance());
+}
+
+TEST(TEST_NYXUS, TEST_GLCM_VARIANCE)
+{
+	ASSERT_NO_THROW(test_glcm_variance());
+}
+
+TEST(TEST_NYXUS, TEST_GLCM_ASM_AVE)
+{
+	ASSERT_NO_THROW(test_glcm_ASM_AVE());
+}
+
+TEST(TEST_NYXUS, TEST_GLCM_ACOR_AVE)
+{
+	ASSERT_NO_THROW(test_glcm_ACOR_AVE());
+}
+
+TEST(TEST_NYXUS, TEST_GLCM_CLUPROM_AVE)
+{
+	ASSERT_NO_THROW(test_glcm_CLUPROM_AVE());
+}
+
+TEST(TEST_NYXUS, TEST_GLCM_CLUSHADE_AVE)
+{
+	ASSERT_NO_THROW(test_glcm_CLUSHADE_AVE());
+}
+
+TEST(TEST_NYXUS, TEST_GLCM_CLUTEND_AVE)
+{
+	ASSERT_NO_THROW(test_glcm_CLUTEND_AVE());
+}
+
+TEST(TEST_NYXUS, TEST_GLCM_CONTRAST_AVE)
+{
+	ASSERT_NO_THROW(test_glcm_CONTRAST_AVE());
+}
+
+TEST(TEST_NYXUS, TEST_GLCM_CORRELATION_AVE)
+{
+	ASSERT_NO_THROW(test_glcm_CORRELATION_AVE());
+}
+
+TEST(TEST_NYXUS, TEST_GLCM_DIFAVE_AVE)
+{
+	ASSERT_NO_THROW(test_glcm_DIFAVE_AVE());
+}
+
+TEST(TEST_NYXUS, TEST_GLCM_DIFENTRO_AVE)
+{
+	ASSERT_NO_THROW(test_glcm_DIFENTRO_AVE());
+}
+
+TEST(TEST_NYXUS, TEST_GLCM_DIFVAR_AVE)
+{
+	ASSERT_NO_THROW(test_glcm_DIFVAR_AVE());
+}
+
+TEST(TEST_NYXUS, TEST_GLCM_DIS_AVE)
+{
+	ASSERT_NO_THROW(test_glcm_DIS_AVE());
+}
+
+TEST(TEST_NYXUS, TEST_GLCM_ENERGY_AVE)
+{
+	ASSERT_NO_THROW(test_glcm_ENERGY_AVE());
+}
+
+TEST(TEST_NYXUS, TEST_GLCM_ENTROPY_AVE)
+{
+	ASSERT_NO_THROW(test_glcm_ENTROPY_AVE());
+}
+
+TEST(TEST_NYXUS, TEST_GLCM_HOM1_AVE)
+{
+	ASSERT_NO_THROW(test_glcm_HOM1_AVE());
+}
+
+TEST(TEST_NYXUS, TEST_GLCM_ID_AVE)
+{
+	ASSERT_NO_THROW(test_glcm_ID_AVE());
+}
+
+TEST(TEST_NYXUS, TEST_GLCM_IDN_AVE)
+{
+	ASSERT_NO_THROW(test_glcm_IDN_AVE());
+}
+
+TEST(TEST_NYXUS, TEST_GLCM_IDM_AVE)
+{
+	ASSERT_NO_THROW(test_glcm_IDM_AVE());
+}
+
+TEST(TEST_NYXUS, TEST_GLCM_IDMN_AVE)
+{
+	ASSERT_NO_THROW(test_glcm_IDMN_AVE());
+}
+
+TEST(TEST_NYXUS, TEST_GLCM_IV_AVE)
+{
+	ASSERT_NO_THROW(test_glcm_IV_AVE());
+}
+
+TEST(TEST_NYXUS, TEST_GLCM_JAVE_AVE)
+{
+	ASSERT_NO_THROW(test_glcm_JAVE_AVE());
+}
+
+TEST(TEST_NYXUS, TEST_GLCM_JE_AVE)
+{
+	ASSERT_NO_THROW(test_glcm_JE_AVE());
+}
+
+TEST(TEST_NYXUS, TEST_GLCM_INFOMEAS1_AVE)
+{
+	ASSERT_NO_THROW(test_glcm_INFOMEAS1_AVE());
+}
+
+TEST(TEST_NYXUS, TEST_GLCM_INFOMEAS2_AVE)
+{
+	ASSERT_NO_THROW(test_glcm_INFOMEAS2_AVE());
+}
+
+TEST(TEST_NYXUS, TEST_GLCM_VARIANCE_AVE)
+{
+	ASSERT_NO_THROW(test_glcm_VARIANCE_AVE());
+}
+
+TEST(TEST_NYXUS, TEST_GLCM_JMAX_AVE)
+{
+	ASSERT_NO_THROW(test_glcm_JMAX_AVE());
+}
+
+TEST(TEST_NYXUS, TEST_GLCM_JVAR_AVE)
+{
+	ASSERT_NO_THROW(test_glcm_JVAR_AVE());
+}
+
+TEST(TEST_NYXUS, TEST_GLCM_SUMAVERAGE_AVE)
+{
+	ASSERT_NO_THROW(test_glcm_SUMAVERAGE_AVE());
+}
+
+TEST(TEST_NYXUS, TEST_GLCM_SUMENTROPY_AVE)
+{
+	ASSERT_NO_THROW(test_glcm_SUMENTROPY_AVE());
+}
+
+TEST(TEST_NYXUS, TEST_GLCM_SUMVARIANCE_AVE)
+{
+	ASSERT_NO_THROW(test_glcm_SUMVARIANCE_AVE());
 }
 
 //***** IBSI tests of GLDM ***** 
@@ -1175,6 +1686,101 @@ TEST(TEST_NYXUS, TEST_IBSI_NGLDM_MATRIX_CORRECTNESS_NONIBSI)
 	ASSERT_NO_THROW(test_ibsi_NGLDM_matrix_correctness_NONIBSI());
 }
 
+TEST(TEST_NYXUS, TEST_IBSI_NGLDM_LDE)
+{
+	ASSERT_NO_THROW(test_ibsi_NGLDM_LDE());
+}
+
+TEST(TEST_NYXUS, TEST_IBSI_NGLDM_HDE)
+{
+	ASSERT_NO_THROW(test_ibsi_NGLDM_HDE());
+}
+
+TEST(TEST_NYXUS, TEST_IBSI_NGLDM_LGLCE)
+{
+	ASSERT_NO_THROW(test_ibsi_NGLDM_LGLCE());
+}
+
+TEST(TEST_NYXUS, TEST_IBSI_NGLDM_HGLCE)
+{
+	ASSERT_NO_THROW(test_ibsi_NGLDM_HGLCE());
+}
+
+TEST(TEST_NYXUS, TEST_IBSI_NGLDM_LDLGLE)
+{
+	ASSERT_NO_THROW(test_ibsi_NGLDM_LDLGLE());
+}
+
+TEST(TEST_NYXUS, TEST_IBSI_NGLDM_LDHGLE)
+{
+	ASSERT_NO_THROW(test_ibsi_NGLDM_LDHGLE());
+}
+
+TEST(TEST_NYXUS, TEST_IBSI_NGLDM_HDLGLE)
+{
+	ASSERT_NO_THROW(test_ibsi_NGLDM_HDLGLE());
+}
+
+TEST(TEST_NYXUS, TEST_IBSI_NGLDM_HDHGLE)
+{
+	ASSERT_NO_THROW(test_ibsi_NGLDM_HDHGLE());
+}
+
+TEST(TEST_NYXUS, TEST_IBSI_NGLDM_GLNU)
+{
+	ASSERT_NO_THROW(test_ibsi_NGLDM_GLNU());
+}
+
+TEST(TEST_NYXUS, TEST_IBSI_NGLDM_GLNUN)
+{
+	ASSERT_NO_THROW(test_ibsi_NGLDM_GLNUN());
+}
+
+TEST(TEST_NYXUS, TEST_IBSI_NGLDM_DCNU)
+{
+	ASSERT_NO_THROW(test_ibsi_NGLDM_DCNU());
+}
+
+TEST(TEST_NYXUS, TEST_IBSI_NGLDM_DCNUN)
+{
+	ASSERT_NO_THROW(test_ibsi_NGLDM_DCNUN());
+}
+
+TEST(TEST_NYXUS, TEST_IBSI_NGLDM_DCP)
+{
+	ASSERT_NO_THROW(test_ibsi_NGLDM_DCP());
+}
+
+TEST(TEST_NYXUS, TEST_IBSI_NGLDM_UNVETTED_NO_DIRECT_ORACLE_GLM)
+{
+	ASSERT_NO_THROW(test_ibsi_NGLDM_unvetted_no_direct_oracle_GLM());
+}
+
+TEST(TEST_NYXUS, TEST_IBSI_NGLDM_GLV)
+{
+	ASSERT_NO_THROW(test_ibsi_NGLDM_GLV());
+}
+
+TEST(TEST_NYXUS, TEST_IBSI_NGLDM_UNVETTED_NO_DIRECT_ORACLE_DCM)
+{
+	ASSERT_NO_THROW(test_ibsi_NGLDM_unvetted_no_direct_oracle_DCM());
+}
+
+TEST(TEST_NYXUS, TEST_IBSI_NGLDM_DCV)
+{
+	ASSERT_NO_THROW(test_ibsi_NGLDM_DCV());
+}
+
+TEST(TEST_NYXUS, TEST_IBSI_NGLDM_DCENT)
+{
+	ASSERT_NO_THROW(test_ibsi_NGLDM_DCENT());
+}
+
+TEST(TEST_NYXUS, TEST_IBSI_NGLDM_DCENE)
+{
+	ASSERT_NO_THROW(test_ibsi_NGLDM_DCENE());
+}
+
 
 //***** 2D intensity ***** 
 
@@ -1394,6 +2000,86 @@ TEST(TEST_NYXUS, TEST_GLRLM_RE)
 	ASSERT_NO_THROW(test_glrlm_re());
 }
 
+TEST(TEST_NYXUS, TEST_GLRLM_SRE_AVE)
+{
+	ASSERT_NO_THROW(test_glrlm_sre_ave());
+}
+
+TEST(TEST_NYXUS, TEST_GLRLM_LRE_AVE)
+{
+	ASSERT_NO_THROW(test_glrlm_lre_ave());
+}
+
+TEST(TEST_NYXUS, TEST_GLRLM_GLN_AVE)
+{
+	ASSERT_NO_THROW(test_glrlm_gln_ave());
+}
+
+TEST(TEST_NYXUS, TEST_GLRLM_GLNN_AVE)
+{
+	ASSERT_NO_THROW(test_glrlm_glnn_ave());
+}
+
+TEST(TEST_NYXUS, TEST_GLRLM_RLN_AVE)
+{
+	ASSERT_NO_THROW(test_glrlm_rln_ave());
+}
+
+TEST(TEST_NYXUS, TEST_GLRLM_RLNN_AVE)
+{
+	ASSERT_NO_THROW(test_glrlm_rlnn_ave());
+}
+
+TEST(TEST_NYXUS, TEST_GLRLM_RP_AVE)
+{
+	ASSERT_NO_THROW(test_glrlm_rp_ave());
+}
+
+TEST(TEST_NYXUS, TEST_GLRLM_GLV_AVE)
+{
+	ASSERT_NO_THROW(test_glrlm_glv_ave());
+}
+
+TEST(TEST_NYXUS, TEST_GLRLM_RV_AVE)
+{
+	ASSERT_NO_THROW(test_glrlm_rv_ave());
+}
+
+TEST(TEST_NYXUS, TEST_GLRLM_RE_AVE)
+{
+	ASSERT_NO_THROW(test_glrlm_re_ave());
+}
+
+TEST(TEST_NYXUS, TEST_GLRLM_LGLRE_AVE)
+{
+	ASSERT_NO_THROW(test_glrlm_lglre_ave());
+}
+
+TEST(TEST_NYXUS, TEST_GLRLM_HGLRE_AVE)
+{
+	ASSERT_NO_THROW(test_glrlm_hglre_ave());
+}
+
+TEST(TEST_NYXUS, TEST_GLRLM_SRLGLE_AVE)
+{
+	ASSERT_NO_THROW(test_glrlm_srlgle_ave());
+}
+
+TEST(TEST_NYXUS, TEST_GLRLM_SRHGLE_AVE)
+{
+	ASSERT_NO_THROW(test_glrlm_srhgle_ave());
+}
+
+TEST(TEST_NYXUS, TEST_GLRLM_LRLGLE_AVE)
+{
+	ASSERT_NO_THROW(test_glrlm_lrlgle_ave());
+}
+
+TEST(TEST_NYXUS, TEST_GLRLM_LRHGLE_AVE)
+{
+	ASSERT_NO_THROW(test_glrlm_lrhgle_ave());
+}
+
 
 //***** 2D GLDZM regression ***** 
 
@@ -1420,6 +2106,11 @@ TEST(TEST_NYXUS, TEST_GLDZM_MATRIX_LGLZE)
 TEST(TEST_NYXUS, TEST_GLDZM_MATRIX_HGLZE)
 {
 	ASSERT_NO_THROW(test_ibsi_GLDZM_HGLZE());
+}
+
+TEST(TEST_NYXUS, TEST_GLDZM_MATRIX_SDLGLE)
+{
+	ASSERT_NO_THROW(test_ibsi_GLDZM_SDLGLE());
 }
 
 TEST(TEST_NYXUS, TEST_GLDZM_MATRIX_SDHGLE)
@@ -1462,9 +2153,24 @@ TEST(TEST_NYXUS, TEST_GLDZM_MATRIX_ZP)
 	ASSERT_NO_THROW(test_ibsi_GLDZM_ZP());
 }
 
+TEST(TEST_NYXUS, TEST_GLDZM_MATRIX_GLM)
+{
+	ASSERT_NO_THROW(test_ibsi_GLDZM_GLM());
+}
+
 TEST(TEST_NYXUS, TEST_GLDZM_MATRIX_GLV)
 {
 	ASSERT_NO_THROW(test_ibsi_GLDZM_GLV());
+}
+
+TEST(TEST_NYXUS, TEST_GLDZM_MATRIX_ZDM)
+{
+	ASSERT_NO_THROW(test_ibsi_GLDZM_ZDM());
+}
+
+TEST(TEST_NYXUS, TEST_GLDZM_MATRIX_ZDV)
+{
+	ASSERT_NO_THROW(test_ibsi_GLDZM_ZDV());
 }
 
 TEST(TEST_NYXUS, TEST_GLDZM_MATRIX_ZDE)

@@ -167,12 +167,24 @@ namespace Nyxus
 				continue;
 			}
 
-			// --Zernike features header 
+			// --Zernike features header
 			if (fc == (int) Feature2D::ZERNIKE2D)
 			{
 				// Populate with indices
 				for (int i = 0; i < ZernikeFeature::NUM_FEATURE_VALS; i++)	// i < ZernikeFeature::num_feature_values_calculated
 					head.emplace_back(fn + "_Z" + std::to_string(i));
+
+				// Proceed with other features
+				continue;
+			}
+
+			// --Intensity histogram: one column per bin (HISTOGRAM_BIN_0 .. _N-1).
+			// Bin edges are reconstructable from MIN/MAX and the bin count.
+			if (fc == (int) Feature2D::HISTOGRAM)
+			{
+				int nbins = env.get_coarse_gray_depth();
+				for (int i = 0; i < nbins; i++)
+					head.emplace_back(fn + "_BIN_" + std::to_string(i));
 
 				// Proceed with other features
 				continue;
@@ -478,7 +490,7 @@ namespace Nyxus
 
 		if (need_aggregation)
 		{
-			auto allres = Nyxus::get_feature_values (env.theFeatureSet, env.uniqueLabels, env.roiData, env.dataset);	// shape: td::vector<std::tuple<std::vector<std::string>, int, std::vector<double>>>
+			auto allres = Nyxus::get_feature_values (env, env.theFeatureSet, env.uniqueLabels, env.roiData, env.dataset);	// shape: td::vector<std::tuple<std::vector<std::string>, int, std::vector<double>>>
 			if (allres.size())
 			{
 				// aggregate
@@ -652,6 +664,28 @@ namespace Nyxus
 						continue;
 					}
 
+					// --Intensity histogram values (one per bin)
+					if (fc == (int) Feature2D::HISTOGRAM)
+					{
+						int nbins = env.get_coarse_gray_depth();
+						// Pad with zeros if the ROI produced no histogram (e.g. blank ROI)
+						if ((int)vv.size() < nbins)
+							vv.resize(nbins, 0.0);
+						for (int i = 0; i < nbins; i++)
+						{
+							double fv = Nyxus::force_finite_number(vv[i], env.resultOptions.noval());	// safe feature value (no NAN, no inf)
+							snprintf(rvbuf, VAL_BUF_LEN, rvfmt, fv);
+	#ifndef DIAGNOSE_NYXUS_OUTPUT
+							ssVals << "," << rvbuf;
+	#else
+							//--diagnoze misalignment--
+							ssVals << "," << fn << "-" << rvbuf;
+	#endif
+						}
+						// Proceed with other features
+						continue;
+					}
+
 					// --Radial distribution features
 					if (fc == (int) Feature2D::FRAC_AT_D)
 					{
@@ -723,6 +757,7 @@ namespace Nyxus
 	}
 
 	std::vector<FTABLE_RECORD> get_feature_values_roi (
+		Environment & env,
 		const FeatureSet & fset,
 		const LR & r,
 		const std::string & ifpath,
@@ -828,6 +863,18 @@ namespace Nyxus
 				continue;
 			}
 
+			// --Intensity histogram (one value per bin); pad blank ROIs to bin count
+			if (fc == (int)Feature2D::HISTOGRAM)
+			{
+				int nbins = env.get_coarse_gray_depth();
+				if ((int)vv.size() < nbins)
+					vv.resize(nbins, 0.0);
+				for (int i = 0; i < nbins; i++)
+					fvals.push_back(vv[i]);
+				// Proceed with other features
+				continue;
+			}
+
 			fvals.push_back(vv[0]);
 		}
 
@@ -843,8 +890,9 @@ namespace Nyxus
 	}
 
 	std::vector<FTABLE_RECORD> get_feature_values (
-		const FeatureSet & fset, 
-		const Uniqueids & uniqueLabels, 
+		Environment & env,
+		const FeatureSet & fset,
+		const Uniqueids & uniqueLabels,
 		const Roidata & roiData,
 		const Dataset & dataset)
 	{
@@ -964,6 +1012,18 @@ namespace Nyxus
 					{
 						feature_values.push_back(vv[i]);
 					}
+					// Proceed with other features
+					continue;
+				}
+
+				// --Intensity histogram (one value per bin); pad blank ROIs to bin count
+				if (fc == (int) Feature2D::HISTOGRAM)
+				{
+					int nbins = env.get_coarse_gray_depth();
+					if ((int)vv.size() < nbins)
+						vv.resize(nbins, 0.0);
+					for (int i = 0; i < nbins; i++)
+						feature_values.push_back(vv[i]);
 					// Proceed with other features
 					continue;
 				}

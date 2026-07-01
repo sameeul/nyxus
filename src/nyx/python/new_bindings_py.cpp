@@ -79,7 +79,8 @@ void initialize_environment(
     int verb_lvl,
     float aniso_x,
     float aniso_y,
-    float aniso_z)
+    float aniso_z,
+    bool merge_labels = false)
 {
     Environment & theEnvironment = Nyxus::findenv (instid);
 
@@ -92,6 +93,14 @@ void initialize_environment(
     theEnvironment.set_coarse_gray_depth(coarse_gray_depth);
     theEnvironment.n_reduce_threads = n_reduce_threads;
     theEnvironment.ibsi_compliance = ibsi;
+    theEnvironment.mergeLabels = merge_labels;
+
+    // Real-valued range hints. Set BEFORE compile_feature_settings() so the FPIMG_*
+    // feature settings (used by the IBSI Intensity Histogram float domain) capture the
+    // requested values rather than defaults.
+    theEnvironment.fpimageOptions.set_target_dyn_range(dynamic_range);
+    theEnvironment.fpimageOptions.set_min_intensity(min_intensity);
+    theEnvironment.fpimageOptions.set_max_intensity(max_intensity);
 
     // Throws exception if invalid feature is passed
     theEnvironment.expand_featuregroups();
@@ -101,11 +110,6 @@ void initialize_environment(
 
     // prepare feature settings
     theEnvironment.compile_feature_settings();
-
-    // real-valued range hints
-    theEnvironment.fpimageOptions.set_target_dyn_range(dynamic_range);
-    theEnvironment.fpimageOptions.set_min_intensity(min_intensity);
-    theEnvironment.fpimageOptions.set_max_intensity(max_intensity);
 
     // RAM limit controlling trivial-nontrivial featurization
     if (ram_limit_mb >= 0) 
@@ -228,6 +232,7 @@ py::tuple featurize_directory_imp(
 
     // (whole-slide flag)
     env.singleROI = (intensity_dir == labels_dir);
+    env.refresh_feature_settings_singleroi();
 
     // read the dataset directory (file names, file pairs)
     std::vector<std::string> intensFiles, labelFiles;
@@ -271,7 +276,6 @@ py::tuple featurize_directory_imp(
         ercode = processDataset_2D_wholeslide(
             env,
             intensFiles,
-            labelFiles,
             env.n_reduce_threads,
             env.saveOption,
             output_path);
@@ -365,6 +369,7 @@ py::tuple featurize_directory_imq_imp (
 
     // Set the whole-slide/multi-ROI flag
     theEnvironment.singleROI = intensity_dir == labels_dir;
+    theEnvironment.refresh_feature_settings_singleroi();
 
     // Read image pairs from the intensity and label directories applying the filepattern
     std::vector<std::string> intensFiles, labelFiles;
@@ -454,6 +459,7 @@ py::tuple featurize_directory_3D_imp(
 
     // Set the whole-slide/multi-ROI flag
     theEnvironment.singleROI = intensity_dir == labels_dir;
+    theEnvironment.refresh_feature_settings_singleroi();
 
     // We're good to extract features. Reset the feature results cache
     theEnvironment.theResultsCache.clear();
@@ -553,6 +559,7 @@ py::tuple featurize_montage_imp (
 
     // Set the whole-slide/multi-ROI flag
     theEnvironment.singleROI = false;
+    theEnvironment.refresh_feature_settings_singleroi();
 
     auto intens_buffer = intensity_images.request();
     auto label_buffer = label_images.request();
@@ -630,46 +637,35 @@ py::tuple featurize_fname_lists_imp (uint64_t instid, const py::list& int_fnames
 
     // Set the whole-slide/multi-ROI flag
     theEnvironment.singleROI = single_roi;
+    theEnvironment.refresh_feature_settings_singleroi();
 
-    std::vector<std::string> intensFiles, labelFiles;
+    // Check intensity file names 
+    std::vector<std::string> intensFiles;
     for (auto it = int_fnames.begin(); it != int_fnames.end(); ++it)
     {
         std::string fn = it->cast<std::string>();
         intensFiles.push_back(fn);
     }
-    for (auto it = seg_fnames.begin(); it != seg_fnames.end(); ++it)
-    {
-        std::string fn = it->cast<std::string>();
-        labelFiles.push_back(fn);
-    }
 
-    // Check the file names 
+    // Check the file names
     if (intensFiles.size() == 0)
         throw std::runtime_error("Intensity file list is blank");
-    if (labelFiles.size() == 0)
-        throw std::runtime_error("Segmentation mask file list is blank");
-    if (intensFiles.size() != labelFiles.size())
-        throw std::runtime_error("Imbalanced intensity and segmentation mask file lists");
+
     for (auto i = 0; i < intensFiles.size(); i++)
     {
         const std::string& i_fname = intensFiles[i];
-        const std::string& s_fname = labelFiles[i];
 
         if (!existsOnFilesystem(i_fname))
         {
             auto msg = "File does not exist: " + i_fname;
             throw std::runtime_error(msg);
         }
-        if (!existsOnFilesystem(s_fname))
-        {
-            auto msg = "File does not exist: " + s_fname;
-            throw std::runtime_error(msg);
-        }
     }
 
+    // clear result buffers
     theEnvironment.theResultsCache.clear();
 
-    // Process the image sdata
+    // Process slides
     int min_online_roi_size = 0;
     int errorCode;
 
@@ -681,13 +677,45 @@ py::tuple featurize_fname_lists_imp (uint64_t instid, const py::list& int_fnames
 		} else {return SaveOption::saveBuffer;}
 	}();
 
-    errorCode = processDataset_2D_segmented (
-        theEnvironment,
-        intensFiles,
-        labelFiles,
-        theEnvironment.n_reduce_threads,
-        theEnvironment.saveOption,
-        output_path);
+    if (single_roi)
+        errorCode = processDataset_2D_wholeslide (
+            theEnvironment,
+            intensFiles,
+            theEnvironment.n_reduce_threads,
+            theEnvironment.saveOption,
+            output_path);
+    else
+    {
+        // check mask file names
+        std::vector<std::string> labelFiles;
+        for (auto it = seg_fnames.begin(); it != seg_fnames.end(); ++it)
+        {
+            std::string fn = it->cast<std::string>();
+            labelFiles.push_back(fn);
+        }
+
+        if (intensFiles.size() != labelFiles.size())
+            throw std::runtime_error("Imbalanced intensity (" + std::to_string(intensFiles.size()) + " items) and segmentation mask (" + std::to_string(labelFiles.size()) + " items) file lists");
+
+        for (auto i = 0; i < labelFiles.size(); i++)
+        {
+            const std::string& s_fname = labelFiles[i];
+            if (!existsOnFilesystem(s_fname))
+            {
+                auto msg = "File does not exist: " + s_fname;
+                throw std::runtime_error(msg);
+            }
+        }
+
+        // we're good to extract features
+        errorCode = processDataset_2D_segmented(
+            theEnvironment,
+            intensFiles,
+            labelFiles,
+            theEnvironment.n_reduce_threads,
+            theEnvironment.saveOption,
+            output_path);
+    }
 
     if (errorCode)
         throw std::runtime_error("Error occurred during dataset processing.");
@@ -721,6 +749,7 @@ py::tuple featurize_fname_lists_3D_imp (
 
     // set the whole-slide/multi-ROI flag
     theEnvironment.singleROI = single_roi;
+    theEnvironment.refresh_feature_settings_singleroi();
 
     // python-side file name lists to c++ vectors 
     std::vector <Imgfile3D_layoutA> ifiles, mfiles;

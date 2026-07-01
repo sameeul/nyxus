@@ -12,6 +12,41 @@
 using namespace Nyxus;
 
 // ROI pixel accumulation routines implemented in Nyxus
+static constexpr double oracle_3p_builtin_hyperskewness_feature_golden_value = 1.978293086605381;
+static constexpr double oracle_3p_builtin_hyperflatness_feature_golden_value = 5.126659243028459;
+static constexpr double oracle_3p_matlab_uniformity_feature_golden_value = 0.0647664;
+static constexpr double oracle_3p_builtin_uniformity_piu_feature_golden_value = 29.477577192725725;
+static constexpr double oracle_3p_builtin_covered_image_intensity_range_feature_golden_value = 8.088960097657740e-01;
+static constexpr double oracle_3p_builtin_robust_mean_feature_golden_value = 3.142136800000000e+04;
+
+static void calculate_pixel_intensity_feature_values(
+    std::vector<std::vector<double>>& fvals,
+    Fsettings s = Fsettings(),
+    int slide_idx = -1,
+    double slide_min = -1.0,
+    double slide_max = -1.0)
+{
+    Dataset ds;
+    ds.dataset_props.push_back(SlideProps("", ""));
+    if (slide_idx >= 0)
+    {
+        ds.dataset_props[slide_idx].min_preroi_inten = slide_min;
+        ds.dataset_props[slide_idx].max_preroi_inten = slide_max;
+    }
+
+    LR roidata(100);   // dummy label 100
+    roidata.slide_idx = slide_idx;
+    load_test_roi_data(roidata, pixelIntensityFeaturesTestData, sizeof(pixelIntensityFeaturesTestData) / sizeof(NyxusPixel));
+
+    roidata.make_nonanisotropic_aabb();
+
+    PixelIntensityFeatures f;
+    ASSERT_NO_THROW(f.calculate(roidata, s, ds));
+
+    roidata.initialize_fvals();
+    f.save_value(roidata.fvals);
+    fvals = roidata.fvals;
+}
 
 void test_pixel_intensity_integrated_intensity()
 {
@@ -205,58 +240,24 @@ void test_pixel_intensity_skewness()
 
 void test_pixel_intensity_kurtosis()
 {
-    // Feed data to the ROI
-    Dataset ds;
-    ds.dataset_props.push_back(SlideProps("",""));
+    std::vector<std::vector<double>> fvals;
+    calculate_pixel_intensity_feature_values(fvals);
 
-    LR roidata(100);   // dummy label 100
-    roidata.slide_idx = -1; // we don't have a real slide for this test ROI
-    load_test_roi_data(roidata, pixelIntensityFeaturesTestData, sizeof(pixelIntensityFeaturesTestData) / sizeof(NyxusPixel));
-
-    // Anisotropy (none)
-    roidata.make_nonanisotropic_aabb();
-
-    // Calculate features
-    PixelIntensityFeatures f;
-    Fsettings s;
-    ASSERT_NO_THROW(f.calculate(roidata, s, ds));
-
-    // Retrieve the feature values
-    roidata.initialize_fvals();
-    f.save_value(roidata.fvals);
-
-    // Check the feature values vs ground truth
-    ASSERT_TRUE(agrees_gt(roidata.fvals[(int)Nyxus::Feature2D::EXCESS_KURTOSIS][0], 1.927888720710090-3));
+    ASSERT_TRUE(agrees_gt(fvals[(int)Nyxus::Feature2D::EXCESS_KURTOSIS][0], 1.927888720710090 - 3));
 }
 
-void test_pixel_intensity_hyperskewness()
+void test_pixel_intensity_pearson_kurtosis()
 {
-    // Feed data to the ROI
-    Dataset ds;
-    ds.dataset_props.push_back(SlideProps("",""));
+    std::vector<std::vector<double>> fvals;
+    calculate_pixel_intensity_feature_values(fvals);
 
-    LR roidata(100);   // dummy label 100
-    roidata.slide_idx = -1; // we don't have a real slide for this test ROI
-    load_test_roi_data(roidata, pixelIntensityFeaturesTestData, sizeof(pixelIntensityFeaturesTestData) / sizeof(NyxusPixel));
-
-    // Anisotropy (none)
-    roidata.make_nonanisotropic_aabb();
-
-    // Calculate features
-    PixelIntensityFeatures f;
-    Fsettings s;
-    ASSERT_NO_THROW(f.calculate(roidata, s, ds));
-
-    // Retrieve the feature values
-    roidata.initialize_fvals();
-    f.save_value(roidata.fvals);
-
-    // Check the feature values vs ground truth
-    ASSERT_TRUE(agrees_gt(roidata.fvals[(int)Nyxus::Feature2D::HYPERSKEWNESS][0], 1.978293086605381));
+    ASSERT_TRUE(agrees_gt(fvals[(int)Nyxus::Feature2D::KURTOSIS][0], 1.927888720710090));
 }
 
-void test_pixel_intensity_hyperflatness()
+void test_pixel_intensity_verifiable_with_3p_builtin_oracle_hyperskewness()
 {
+    SCOPED_TRACE("VERIFIABLE_WITH_3P_BUILTIN_ORACLE__HYPERSKEWNESS");
+
     // Feed data to the ROI
     Dataset ds;
     ds.dataset_props.push_back(SlideProps("",""));
@@ -278,7 +279,35 @@ void test_pixel_intensity_hyperflatness()
     f.save_value(roidata.fvals);
 
     // Check the feature values vs ground truth
-    ASSERT_TRUE(agrees_gt(roidata.fvals[(int)Nyxus::Feature2D::HYPERFLATNESS][0], 5.126659243028459));
+    ASSERT_TRUE(agrees_gt(roidata.fvals[(int)Nyxus::Feature2D::HYPERSKEWNESS][0], oracle_3p_builtin_hyperskewness_feature_golden_value));
+}
+
+void test_pixel_intensity_verifiable_with_3p_builtin_oracle_hyperflatness()
+{
+    SCOPED_TRACE("VERIFIABLE_WITH_3P_BUILTIN_ORACLE__HYPERFLATNESS");
+
+    // Feed data to the ROI
+    Dataset ds;
+    ds.dataset_props.push_back(SlideProps("",""));
+
+    LR roidata(100);   // dummy label 100
+    roidata.slide_idx = -1; // we don't have a real slide for this test ROI
+    load_test_roi_data(roidata, pixelIntensityFeaturesTestData, sizeof(pixelIntensityFeaturesTestData) / sizeof(NyxusPixel));
+
+    // Anisotropy (none)
+    roidata.make_nonanisotropic_aabb();
+
+    // Calculate features
+    PixelIntensityFeatures f;
+    Fsettings s;
+    ASSERT_NO_THROW(f.calculate(roidata, s, ds));
+
+    // Retrieve the feature values
+    roidata.initialize_fvals();
+    f.save_value(roidata.fvals);
+
+    // Check the feature values vs ground truth
+    ASSERT_TRUE(agrees_gt(roidata.fvals[(int)Nyxus::Feature2D::HYPERFLATNESS][0], oracle_3p_builtin_hyperflatness_feature_golden_value));
 }
 
 void test_pixel_intensity_mean_absolute_deviation()
@@ -309,28 +338,10 @@ void test_pixel_intensity_mean_absolute_deviation()
 
 void test_pixel_intensity_robust_mean_absolute_deviation()
 {
-    // Feed data to the ROI
-    Dataset ds;
-    ds.dataset_props.push_back(SlideProps("",""));
+    std::vector<std::vector<double>> fvals;
+    calculate_pixel_intensity_feature_values(fvals);
 
-    LR roidata(100);   // dummy label 100
-    roidata.slide_idx = -1; // we don't have a real slide for this test ROI
-    load_test_roi_data(roidata, pixelIntensityFeaturesTestData, sizeof(pixelIntensityFeaturesTestData) / sizeof(NyxusPixel));
-
-    // Anisotropy (none)
-    roidata.make_nonanisotropic_aabb();
-
-    // Calculate features
-    PixelIntensityFeatures f;
-    Fsettings s;
-    ASSERT_NO_THROW(f.calculate(roidata, s, ds));
-
-    // Retrieve the feature values
-    roidata.initialize_fvals();
-    f.save_value (roidata.fvals);
-
-    // Check the feature values vs ground truth
-    ASSERT_TRUE(agrees_gt(roidata.fvals[(int)Nyxus::Feature2D::ROBUST_MEAN_ABSOLUTE_DEVIATION][0], 1.115934515469031e+04));
+    ASSERT_TRUE(agrees_gt(fvals[(int)Nyxus::Feature2D::ROBUST_MEAN_ABSOLUTE_DEVIATION][0], 1.044061849600000e+04));
 }
 
 void test_pixel_intensity_standard_error()
@@ -472,11 +483,13 @@ void test_pixel_intensity_uniformity()
     f.save_value(roidata.fvals);
 
     // Check the feature values vs ground truth
-    ASSERT_TRUE(agrees_gt(roidata.fvals[(int)Nyxus::Feature2D::UNIFORMITY][0], 0.0647664, 100)); // Using 1% tolerance vs MATLAB
+    ASSERT_TRUE(agrees_gt(roidata.fvals[(int)Nyxus::Feature2D::UNIFORMITY][0], oracle_3p_matlab_uniformity_feature_golden_value, 100)); // Using 1% tolerance vs MATLAB
 }
 
-void test_pixel_intensity_uniformity_piu()
+void test_pixel_intensity_verifiable_with_3p_builtin_oracle_uniformity_piu()
 {
+    SCOPED_TRACE("VERIFIABLE_WITH_3P_BUILTIN_ORACLE__UNIFORMITY_PIU");
+
     // Feed data to the ROI
     Dataset ds;
     ds.dataset_props.push_back(SlideProps("",""));
@@ -501,35 +514,88 @@ void test_pixel_intensity_uniformity_piu()
     f.save_value(roidata.fvals);
 
     // Check the feature values vs ground truth
-    ASSERT_TRUE(agrees_gt(roidata.fvals[(int)Nyxus::Feature2D::UNIFORMITY_PIU][0], 29.477577192725725));
+    ASSERT_TRUE(agrees_gt(roidata.fvals[(int)Nyxus::Feature2D::UNIFORMITY_PIU][0], oracle_3p_builtin_uniformity_piu_feature_golden_value));
 }
 
 void test_pixel_intensity_percentiles_iqr()
 {
-    // Feed data to the ROI
-    Dataset ds;
-    ds.dataset_props.push_back(SlideProps("",""));
+    std::vector<std::vector<double>> fvals;
+    calculate_pixel_intensity_feature_values(fvals);
 
-    LR roidata(100);   // dummy label 100
-    roidata.slide_idx = -1; // we don't have a real slide for this test ROI
-    load_test_roi_data(roidata, pixelIntensityFeaturesTestData, sizeof(pixelIntensityFeaturesTestData) / sizeof(NyxusPixel));
+    ASSERT_TRUE(agrees_gt(fvals[(int)Nyxus::Feature2D::P01][0], 1.189536940000000e+04));
+    ASSERT_TRUE(agrees_gt(fvals[(int)Nyxus::Feature2D::P10][0], 1.610747200000000e+04));
+    ASSERT_TRUE(agrees_gt(fvals[(int)Nyxus::Feature2D::P25][0], 1.907482583333333e+04));
+    ASSERT_TRUE(agrees_gt(fvals[(int)Nyxus::Feature2D::P75][0], 4.580120500000000e+04));
+    ASSERT_TRUE(agrees_gt(fvals[(int)Nyxus::Feature2D::P90][0], 5.338177800000000e+04));
+    ASSERT_TRUE(agrees_gt(fvals[(int)Nyxus::Feature2D::P99][0], 6.341676030000000e+04));
+    ASSERT_TRUE(agrees_gt(fvals[(int)Nyxus::Feature2D::INTERQUARTILE_RANGE][0], 2.672637916666667e+04));
+}
 
-    // Calculate features
-    PixelIntensityFeatures f;
-    Fsettings s;
-    ASSERT_NO_THROW(f.calculate(roidata, s, ds));
+void test_pixel_intensity_cov()
+{
+    std::vector<std::vector<double>> fvals;
+    calculate_pixel_intensity_feature_values(fvals);
 
-    // Retrieve the feature values
-    roidata.initialize_fvals();
-    f.save_value(roidata.fvals);
+    ASSERT_TRUE(agrees_gt(fvals[(int)Nyxus::Feature2D::COV][0], 4.523365498399634e-01));
+}
 
-    // Check the feature values vs ground truth
-    ASSERT_TRUE(agrees_gt(roidata.fvals[(int)Nyxus::Feature2D::P01][0], 1.208140000000000e+04));
-    ASSERT_TRUE(agrees_gt(roidata.fvals[(int)Nyxus::Feature2D::P10][0], 16329));
-    ASSERT_TRUE(agrees_gt(roidata.fvals[(int)Nyxus::Feature2D::P25][0], 19552));
-    ASSERT_TRUE(agrees_gt(roidata.fvals[(int)Nyxus::Feature2D::P75][0], 45723));
-    ASSERT_TRUE(agrees_gt(roidata.fvals[(int)Nyxus::Feature2D::P90][0], 5.336070000000000e+04));
-    ASSERT_TRUE(agrees_gt(roidata.fvals[(int)Nyxus::Feature2D::P99][0], 6.338096000000000e+04));
-    ASSERT_TRUE(agrees_gt(roidata.fvals[(int)Nyxus::Feature2D::INTERQUARTILE_RANGE][0], 26171));
+void test_pixel_intensity_verifiable_with_3p_builtin_oracle_covered_image_intensity_range()
+{
+    SCOPED_TRACE("VERIFIABLE_WITH_3P_BUILTIN_ORACLE__COVERED_IMAGE_INTENSITY_RANGE");
+
+    std::vector<std::vector<double>> fvals;
+    calculate_pixel_intensity_feature_values(fvals, Fsettings(), 0, 0.0, 65535.0);
+
+    ASSERT_TRUE(agrees_gt(fvals[(int)Nyxus::Feature2D::COVERED_IMAGE_INTENSITY_RANGE][0], oracle_3p_builtin_covered_image_intensity_range_feature_golden_value));
+}
+
+void test_pixel_intensity_median_absolute_deviation()
+{
+    std::vector<std::vector<double>> fvals;
+    calculate_pixel_intensity_feature_values(fvals);
+
+    ASSERT_TRUE(agrees_gt(fvals[(int)Nyxus::Feature2D::MEDIAN_ABSOLUTE_DEVIATION][0], 1.269384415584416e+04));
+}
+
+void test_pixel_intensity_qcod()
+{
+    std::vector<std::vector<double>> fvals;
+    calculate_pixel_intensity_feature_values(fvals);
+
+    ASSERT_TRUE(agrees_gt(fvals[(int)Nyxus::Feature2D::QCOD][0], 4.119607630640470e-01));
+}
+
+void test_pixel_intensity_verifiable_with_3p_builtin_oracle_robust_mean()
+{
+    SCOPED_TRACE("VERIFIABLE_WITH_3P_BUILTIN_ORACLE__ROBUST_MEAN");
+
+    std::vector<std::vector<double>> fvals;
+    calculate_pixel_intensity_feature_values(fvals);
+
+    ASSERT_TRUE(agrees_gt(fvals[(int)Nyxus::Feature2D::ROBUST_MEAN][0], oracle_3p_builtin_robust_mean_feature_golden_value));
+}
+
+void test_pixel_intensity_standard_deviation_biased()
+{
+    std::vector<std::vector<double>> fvals;
+    calculate_pixel_intensity_feature_values(fvals);
+
+    ASSERT_TRUE(agrees_gt(fvals[(int)Nyxus::Feature2D::STANDARD_DEVIATION_BIASED][0], 1.468306260221863e+04));
+}
+
+void test_pixel_intensity_variance()
+{
+    std::vector<std::vector<double>> fvals;
+    calculate_pixel_intensity_feature_values(fvals);
+
+    ASSERT_TRUE(agrees_gt(fvals[(int)Nyxus::Feature2D::VARIANCE][0], 2.170014275596299e+08));
+}
+
+void test_pixel_intensity_variance_biased()
+{
+    std::vector<std::vector<double>> fvals;
+    calculate_pixel_intensity_feature_values(fvals);
+
+    ASSERT_TRUE(agrees_gt(fvals[(int)Nyxus::Feature2D::VARIANCE_BIASED][0], 2.155923273806713e+08));
 }
 

@@ -28,28 +28,7 @@ void BasicMorphologyFeatures::calculate (LR& r, const Fsettings& sett)
 			val_AREA_UM2  = n * std::pow(pxsize, 2);	// former theEnvironment.pixelSizeUm
 
 	// --DIAMETER_EQUAL_AREA
-	val_DIAMETER_EQUAL_AREA = double(val_AREA_PIXELS_COUNT) / M_PI * 4.0;
-
-	// --CENTROID_XY
-	double cen_x = 0.0,
-		cen_y = 0.0;
-	for (auto& px : r.raw_pixels)
-	{
-		cen_x += px.x;
-		cen_y += px.y;
-	}
-
-	val_CENTROID_X = cen_x;
-	val_CENTROID_Y = cen_y;
-	
-	// --COMPACTNESS
-	Moments2 mom2;
-	for (auto& px : r.raw_pixels)
-	{
-		double dst = std::sqrt(px.sqdist(cen_x, cen_y));
-		mom2.add(dst);
-	}
-	val_COMPACTNESS = mom2.std() / n;
+	val_DIAMETER_EQUAL_AREA = 2.0 * std::sqrt(static_cast<double>(val_AREA_PIXELS_COUNT) / M_PI);
 
 	//==== Basic morphology :: Bounding box
 	val_BBOX_XMIN = r.aabb.get_xmin();
@@ -67,14 +46,24 @@ void BasicMorphologyFeatures::calculate (LR& r, const Fsettings& sett)
 	val_CENTROID_X /= n;
 	val_CENTROID_Y /= n;
 
+	// --COMPACTNESS
+	Moments2 mom2;
+	for (auto& px : r.raw_pixels)
+	{
+		double dx = static_cast<double>(px.x) - val_CENTROID_X;
+		double dy = static_cast<double>(px.y) - val_CENTROID_Y;
+		double dst = std::sqrt(dx * dx + dy * dy);
+		mom2.add(dst);
+	}
+	val_COMPACTNESS = mom2.std() / n;
+
 	//==== Basic morphology :: Weighted centroids
 	double x_mass = 0, y_mass = 0, mass = 0;
 
 	for (auto& px : r.raw_pixels)
 	{
-		// the "+1" is only for compatibility with matlab code (where index starts from 1) 
-		x_mass = x_mass + (px.x + 1) * px.inten;
-		y_mass = y_mass + (px.y + 1) * px.inten;
+		x_mass += px.x * px.inten;
+		y_mass += px.y * px.inten;
 		mass += px.inten;
 	}
 
@@ -99,7 +88,7 @@ void BasicMorphologyFeatures::calculate (LR& r, const Fsettings& sett)
 	val_EXTENT = n / r.aabb.get_area();
 
 	//==== Basic morphology :: Aspect ratio
-	val_ASPECT_RATIO = r.aabb.get_width() / r.aabb.get_height();
+	val_ASPECT_RATIO = static_cast<double>(r.aabb.get_width()) / static_cast<double>(r.aabb.get_height());
 }
 
 void BasicMorphologyFeatures::osized_add_online_pixel(size_t x, size_t y, uint32_t intensity) {} // Not providing online calculation for these group of features
@@ -116,31 +105,7 @@ void BasicMorphologyFeatures::osized_calculate (LR& r, const Fsettings& s, Image
 		val_AREA_UM2 = n * std::pow(pxsize, 2);
 
 	// --DIAMETER_EQUAL_AREA
-	val_DIAMETER_EQUAL_AREA = double(val_AREA_PIXELS_COUNT) / M_PI * 4.0;
-
-	// --CENTROID_XY
-	double cen_x = 0.0,
-		cen_y = 0.0;
-	
-	for (size_t i = 0; i < r.raw_pixels_NT.size(); i++)	// for (auto& px : r.raw_pixels)
-	{
-		auto px = r.raw_pixels_NT.get_at(i);
-		cen_x += px.x;
-		cen_y += px.y;
-	}
-
-	val_CENTROID_X = cen_x;
-	val_CENTROID_Y = cen_y;
-
-	// --COMPACTNESS
-	Moments2 mom2;
-	for (size_t i = 0; i < r.raw_pixels_NT.size(); i++)	// for (auto& px : r.raw_pixels)
-	{
-		auto px = r.raw_pixels_NT.get_at(i);
-		double dst = std::sqrt(px.sqdist(cen_x, cen_y));
-		mom2.add(dst);
-	}
-	val_COMPACTNESS = mom2.std() / n;
+	val_DIAMETER_EQUAL_AREA = 2.0 * std::sqrt(static_cast<double>(val_AREA_PIXELS_COUNT) / M_PI);
 
 	//==== Basic morphology :: Bounding box
 	val_BBOX_XMIN = r.aabb.get_xmin();
@@ -159,15 +124,26 @@ void BasicMorphologyFeatures::osized_calculate (LR& r, const Fsettings& s, Image
 	val_CENTROID_X /= n;
 	val_CENTROID_Y /= n;
 
+	// --COMPACTNESS
+	Moments2 mom2;
+	for (size_t i = 0; i < r.raw_pixels_NT.size(); i++)	// for (auto& px : r.raw_pixels)
+	{
+		auto px = r.raw_pixels_NT.get_at(i);
+		double dx = static_cast<double>(px.x) - val_CENTROID_X;
+		double dy = static_cast<double>(px.y) - val_CENTROID_Y;
+		double dst = std::sqrt(dx * dx + dy * dy);
+		mom2.add(dst);
+	}
+	val_COMPACTNESS = mom2.std() / n;
+
 	//==== Basic morphology :: Weighted centroids
 	double x_mass = 0, y_mass = 0, mass = 0;
 
 	for (size_t i = 0; i < r.raw_pixels_NT.size(); i++)	// for (auto& px : r.raw_pixels)
 	{
 		auto px = r.raw_pixels_NT.get_at(i);
-		// the "+1" is only for compatibility with matlab code (where index starts from 1) 
-		x_mass = x_mass + (px.x + 1) * px.inten;
-		y_mass = y_mass + (px.y + 1) * px.inten;
+		x_mass += px.x * px.inten;
+		y_mass += px.y * px.inten;
 		mass += px.inten;
 	}
 
@@ -192,7 +168,7 @@ void BasicMorphologyFeatures::osized_calculate (LR& r, const Fsettings& s, Image
 	val_EXTENT = n / r.aabb.get_area();
 
 	//==== Basic morphology :: Aspect ratio
-	val_ASPECT_RATIO = r.aabb.get_width() / r.aabb.get_height();
+	val_ASPECT_RATIO = static_cast<double>(r.aabb.get_width()) / static_cast<double>(r.aabb.get_height());
 }
 
 void BasicMorphologyFeatures::save_value(std::vector<std::vector<double>>& fvals)

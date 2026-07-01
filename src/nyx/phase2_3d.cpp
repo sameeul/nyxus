@@ -40,6 +40,8 @@ namespace Nyxus
 		// time frames: 1:1, 1:N, and N:1 cases are permitted.
 		size_t 
 			/*
+			* we don't need these in the 3D scenario:
+			* 
 			nth = env.theImLoader.get_num_tiles_hor(),
 			ntv = env.theImLoader.get_num_tiles_vert(),
 			fw = env.theImLoader.get_tile_width(),
@@ -614,12 +616,10 @@ namespace Nyxus
 					ph_y = size_t(double(vy) / aniso_y),
 					i = ph_y * tw + ph_x;
 
-				// read buffered physical pixel 
+				// read buffered physical pixel
 				const std::vector<uint32_t>& dataI = ldr.get_int_tile_buffer();
-				const std::shared_ptr<std::vector<uint32_t>>& spL = ldr.get_seg_tile_sptr();
-				bool wholeslide = spL == nullptr; // alternatively, theEnvironment.singleROI
 
-				// Cache this pixel 
+				// Cache this pixel
 				feed_pixel_2_cache_LR(vc, vr, dataI[i], vroi);
 			}
 		}

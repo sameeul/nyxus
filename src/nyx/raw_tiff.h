@@ -9,6 +9,7 @@
 #else
     #include <tiffio.h>
 #endif
+#include <cstdint>
 #include <cstring>
 #include <limits.h>
 
@@ -172,6 +173,14 @@ public:
         // Low level read TIFF bytes
         auto t_szb = TIFFTileSize(tiff_);
         tiffTile = _TIFFmalloc(t_szb);
+
+        if (!tiffTile)
+        {
+            std::string erm = std::string("_TIFFmalloc() failed at ") + __FILE__ + ":" + std::to_string(__LINE__);
+            std::cerr << "\n\n" << erm << "\n\n";
+            throw std::runtime_error(erm);
+        }
+        
         auto errcode = TIFFReadTile(tiff_, tiffTile, indexColGlobalTile * tileWidth_, indexRowGlobalTile * tileHeight_, 0, 0);
         if (errcode < 0)
         {
@@ -180,7 +189,7 @@ public:
             else // something else
             {
                 std::string erm = "Tile Loader ERROR: error reading tile data returning code " + std::to_string(errcode);
-                std::cerr << erm << "\n";
+                std::cerr << "\n\n" << erm << "\n\n";
                 throw std::runtime_error(erm);
             }
         }
@@ -188,7 +197,8 @@ public:
 
     void free_tile() override
     {
-        _TIFFfree(tiffTile);
+        _TIFFfree (tiffTile);
+        tiffTile = nullptr;
     }
 
     uint32_t get_uint32_pixel (size_t idx) const
@@ -448,7 +458,7 @@ public:
             throw (std::runtime_error(erm));
         }
 
-        uint8* fub = (uint8*)buf;
+        auto* fub = static_cast<std::uint8_t*>(buf);
         for (size_t r = 0; r < tileHeight_; r++)
         {
             size_t offs = r * scanline_szb;
