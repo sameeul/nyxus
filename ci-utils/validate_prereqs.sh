@@ -30,6 +30,9 @@ check "Z5 header"             "$LOCAL_INSTALL/include/z5/z5.hxx"
 check "Z5 array_access header" "$LOCAL_INSTALL/include/z5/multiarray/array_access.hxx"
 check "nlohmann_json headers" "$LOCAL_INSTALL/include/nlohmann/json.hpp"
 check "blosc header"          "$LOCAL_INSTALL/include/blosc.h"
+# z5 3.0.1 uses libdeflate as its gzip/zlib backend (find_package(libdeflate CONFIG REQUIRED))
+check "libdeflate CMake config" "$LOCAL_INSTALL/lib/cmake/libdeflate/libdeflate-config.cmake" \
+                                "$LOCAL_INSTALL/lib64/cmake/libdeflate/libdeflate-config.cmake"
 
 echo ""
 echo "-- Arrow support (CMakeLists.txt: find_package Arrow, Parquet) --"

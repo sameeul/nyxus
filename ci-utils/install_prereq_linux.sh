@@ -61,9 +61,21 @@ unzip zlib131.zip
 cd zlib-1.3.1
 mkdir build_man
 cd build_man
-cmake -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_INSTALL_PREFIX=../../"$LOCAL_INSTALL_DIR"/ ..  
-cmake --build . 
-cmake --build . --target install 
+cmake -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_INSTALL_PREFIX=../../"$LOCAL_INSTALL_DIR"/ ..
+cmake --build .
+cmake --build . --target install
+cd ../../
+
+# libdeflate is a base dependency (used by libtiff) and is also the gzip/zlib
+# backend for z5 3.0.1 (find_package(libdeflate CONFIG REQUIRED)), so install it
+# before the z5 build below.
+curl -L https://github.com/ebiggers/libdeflate/archive/refs/tags/v1.19.zip -o v1.19.zip
+unzip v1.19.zip
+cd libdeflate-1.19
+mkdir build_man
+cd build_man
+cmake -DCMAKE_INSTALL_PREFIX=../../"$LOCAL_INSTALL_DIR"/   -DCMAKE_PREFIX_PATH=../../"$LOCAL_INSTALL_DIR"/ ..
+make install -j4
 cd ../../
 
 if [[ $BUILD_BOOST_DEP -eq 1 ]]; then
@@ -107,7 +119,7 @@ if [[ $BUILD_Z5_DEP -eq 1 ]]; then
     cd z5-3.0.1
     mkdir build_man
     cd build_man
-    cmake -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_INSTALL_PREFIX=../../"$LOCAL_INSTALL_DIR"/   -DCMAKE_PREFIX_PATH=../../"$LOCAL_INSTALL_DIR"/ -DWITH_BLOSC=ON -DBUILD_Z5PY=OFF -DUSE_LIBDEFLATE=OFF  ..
+    cmake -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_INSTALL_PREFIX=../../"$LOCAL_INSTALL_DIR"/   -DCMAKE_PREFIX_PATH=../../"$LOCAL_INSTALL_DIR"/ -DWITH_BLOSC=ON -DBUILD_Z5PY=OFF  ..
     make install -j4
     cd ../../
 fi
@@ -141,16 +153,6 @@ if [[ $BULD_DCMTK_DEP -eq 1 ]]; then
     make install -j4
     cd ../../
 fi
-
-curl -L https://github.com/ebiggers/libdeflate/archive/refs/tags/v1.19.zip -o v1.19.zip
-unzip v1.19.zip
-cd libdeflate-1.19
-mkdir build_man
-cd build_man
-cmake -DCMAKE_INSTALL_PREFIX=../../"$LOCAL_INSTALL_DIR"/   -DCMAKE_PREFIX_PATH=../../"$LOCAL_INSTALL_DIR"/ ..
-make install -j4
-cd ../../
-
 
 for i in {1..5}
 do
