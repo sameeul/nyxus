@@ -6,7 +6,7 @@ dependencies:
   - python>=3.8
   - compilers
   - boost[version='>=1.63']
-  - z5
+  - z5py[version='>=3.0.1']
   - nlohmann_json
   - cmake
   - libtiff
