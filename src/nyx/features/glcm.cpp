@@ -726,9 +726,16 @@ double GLCMFeature::f_entropy(const SimpleMatrix<double>& P)
 	int i, j;
 	double entropy = 0;
 
+	// Normalize the co-occurrence counts to probabilities (/ sum_p) before taking
+	// -sum p*log2(p); this is the Haralick/IBSI entropy (identical to joint entropy,
+	// f_GLCM_JE). Without the / sum_p this summed -sum count*log2(count) over raw
+	// counts, which is large-negative and meaningless (an entropy is non-negative).
 	for (j = 0; j < Ng; j++)
 		for (i = 0; i < Ng; i++)
-			entropy += P.xy(i, j) * fast_log10(P.xy(i, j) + EPSILON) / LOG10_2;
+		{
+			double p = P.xy(i, j) / sum_p;
+			entropy += p * fast_log10(p + EPSILON) / LOG10_2;
+		}
 
 	return -entropy;
 }
@@ -1057,9 +1064,12 @@ double GLCMFeature::f_GLCM_HOM2(const SimpleMatrix<double>& P_matrix)
 
 	double hom2 = 0.0;
 
+	// Normalize the co-occurrence counts to probabilities (/ sum_p); this is the
+	// inverse difference moment (identical to f_idm / IBSI Idm). Without the / sum_p
+	// this summed raw counts / (1+|i-j|^2) instead of probabilities.
 	for (int x = 0; x < n_levels; x++)
 		for (int y = 0; y < n_levels; y++)
-			hom2 += P_matrix.xy(x, y) / (1.0 + (double)std::abs(x - y) * (double)std::abs(x - y));
+			hom2 += (P_matrix.xy(x, y) / sum_p) / (1.0 + (double)std::abs(x - y) * (double)std::abs(x - y));
 
 	return hom2;
 }

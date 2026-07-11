@@ -30,6 +30,8 @@
 // invariant to BOTH matrix symmetrization AND the absolute level values that matlab binning re-maps
 // -> PyRadiomics agrees within the test's 1% tolerance. These are VETTED against an external
 // definition, not merely pinned.
+// GLCM_HOM2 is vetted transitively: after the sum_p normalization f_GLCM_HOM2 == f_idm, so it equals
+// the oracle-matched IDM (the same difference-based, symmetrization-invariant value).
 // CORRECTION (2026-07-09, PR #356 review): ACOR/IDN/IDMN/SUMAVERAGE were previously listed here as
 // oracle-vetted -- that was WRONG for this ibsi=False / matlab-binning config. They depend on the
 // absolute grey-level values / Ng, which matlab binning re-maps, so under this config they diverge
@@ -48,6 +50,7 @@ static std::unordered_map<std::string, double> vetted_nyxus_convention_regressio
     {"GLCM_HOM1", 0.580526},
     {"GLCM_ID", 0.580526},
     {"GLCM_IDM", 0.572168},
+    {"GLCM_HOM2", 0.572168},    // == GLCM_IDM (f_GLCM_HOM2 normalizes by sum_p); difference-based -> vetted transitively
     {"GLCM_IV", 0.000206466},
     {"GLCM_SUMENTROPY", 1.61957}
 };
@@ -56,9 +59,11 @@ static std::unordered_map<std::string, double> vetted_nyxus_convention_regressio
 // (a) Transpose-sensitive: they depend on individual matrix entries or on the grey-tone marginal
 //     means (mu_x/mu_y), which differ between the asymmetric matrix used here and a symmetric one.
 //     As configured (symmetric_glcm=false) they diverge from any symmetric oracle by >1% (verified:
-//     ASM/ENERGY 3.7%, CLUSHADE 46%, CLUTEND/SUMVARIANCE 3.2%, JE 9.3%, JVAR/VARIANCE ~10%, ...), and
-//     ENTROPY/HOM2 are computed from raw counts (un-normalized), so they have no probability-
-//     normalized oracle counterpart.
+//     ASM/ENERGY 3.7%, CLUSHADE 46%, CLUTEND/SUMVARIANCE 3.2%, JE 9.3%, JVAR/VARIANCE ~10%, ...).
+//     ENTROPY belongs to this group: f_entropy now normalizes by sum_p so ENTROPY == joint entropy
+//     GLCM_JE, which is transpose-sensitive, so ENTROPY stays an unvetted snapshot on this asymmetric
+//     config (it IS oracle-vetted on the IBSI/symmetric path in test_glcm_oracle.py/.h). Its sibling
+//     HOM2 (== GLCM_IDM) is difference-based and therefore lives in the vetted map above, not here.
 // (b) Absolute-level / Ng-dependent (ACOR/IDN/IDMN/SUMAVERAGE, moved here from the vetted map on
 //     2026-07-09 per PR #356 review): matlab binning re-maps the absolute grey levels and Ng, so on
 //     this ibsi=False config they diverge from PyRadiomics (up to ~43% for ACOR). They ARE genuinely
@@ -80,8 +85,7 @@ static std::unordered_map<std::string, double> unvetted_nyxus_convention_regress
     {"GLCM_CLUTEND", 1.5639042057291665e+03},
     {"GLCM_CORRELATION", 0.000690135},
     {"GLCM_ENERGY", 0.381801},
-    {"GLCM_ENTROPY", -20.1735},
-    {"GLCM_HOM2", 6.81505},
+    {"GLCM_ENTROPY", 1.87602},              // == GLCM_JE (f_entropy normalizes by sum_p); transpose-sensitive like JE -> unvetted on this asymmetric config (IBSI-path vetted, test_glcm_oracle)
     {"GLCM_INFOMEAS1", -0.184406},
     {"GLCM_INFOMEAS2", 0.495817},
     {"GLCM_JAVE", 35.5215},
