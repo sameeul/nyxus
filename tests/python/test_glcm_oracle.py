@@ -128,3 +128,60 @@ def test_glcm_acor_family_ibsi_oracle():
     for key, gold in goldens.items():
         assert row[key] == pytest.approx(gold, rel=1e-3), \
             f"{key}: nyxus(ibsi=True) {row[key]} must match the PyRadiomics/IBSI oracle {gold} to 1e-3"
+
+
+def test_glcm_ave_pyradiomics_oracle():
+    """Vet the angle-averaged GLCM _AVE family against PyRadiomics on the IBSI path (symmetric
+    matrix + identity binning). Previously these were regression-only self-snapshots in
+    tests/test_glcm.h; here each is pinned to a third-party (PyRadiomics) reference value.
+
+    Same dense 8x8 fixture as test_glcm_acor_family_ibsi_oracle (every grey level 1..8 present so
+    PyRadiomics does not re-index levels), nyxus config coarse_gray_depth=8, ibsi=True.
+
+    PyRadiomics reference (generated offline in radiomics/pyradiomics Docker, radiomics v3.0.1,
+    symmetricalGLCM=True, binWidth=1, distances=[1], force2D=True, force2Ddimension=0,
+    weightingNorm=None, label=1) on the identical array+mask. nyxus->PyRadiomics feature map:
+        ASM->JointEnergy  CLUPROM->ClusterProminence  CLUSHADE->ClusterShade
+        CLUTEND->ClusterTendency  CORRELATION->Correlation  DIFAVE->DifferenceAverage
+        DIFENTRO->DifferenceEntropy  DIFVAR->DifferenceVariance  ENTROPY/JE->JointEntropy
+        IDM->Idm  ID->Id  IV->InverseVariance  JAVE->JointAverage  INFOMEAS1->Imc1
+        INFOMEAS2->Imc2  VARIANCE->SumSquares  JMAX->MaximumProbability  SUMENTROPY->SumEntropy
+    ENTROPY_AVE matches only because f_entropy normalizes the co-occurrence counts by sum_p (else it
+    sums raw counts and returns a large-negative value); it then equals JE. The sibling HOM2 (which
+    has no _AVE variant) is normalized by the same change and vetted via its == GLCM_IDM equivalence
+    in the C++ tests/test_glcm.h.
+    (nyxus GLCM features without a PyRadiomics counterpart -- DIS, HOM1, JVAR, SUMVARIANCE, ENERGY --
+    are intentionally not asserted here.)"""
+    ii, jj = np.meshgrid(np.arange(8), np.arange(8), indexing="ij")
+    arr = ((ii + 2 * jj) % 8) + 1
+    assert set(np.unique(arr).tolist()) == set(range(1, 9))
+    inten = np.zeros((10, 10), np.uint32)
+    label = np.zeros((10, 10), np.uint32)
+    inten[1:9, 1:9] = arr
+    label[1:9, 1:9] = 1
+    row = _one(["*ALL_GLCM*"], inten, label, coarse_gray_depth=8, ibsi=True)
+
+    goldens = {
+        "GLCM_ASM_AVE":         0.06353472511,   # JointEnergy
+        "GLCM_CLUPROM_AVE":     263.2873392,     # ClusterProminence
+        "GLCM_CLUSHADE_AVE":    0.01754371053,   # ClusterShade
+        "GLCM_CLUTEND_AVE":     10.89889629,     # ClusterTendency
+        "GLCM_CORRELATION_AVE": 0.03216471499,   # Correlation
+        "GLCM_DIFAVE_AVE":      2.558673469,     # DifferenceAverage
+        "GLCM_DIFENTRO_AVE":    0.7107003608,    # DifferenceEntropy
+        "GLCM_DIFVAR_AVE":      2.945413369,     # DifferenceVariance
+        "GLCM_ENTROPY_AVE":     3.987900382,     # JointEntropy (== JE, post normalization fix)
+        "GLCM_JE_AVE":          3.987900382,     # JointEntropy
+        "GLCM_ID_AVE":          0.3528380102,    # Id
+        "GLCM_IDM_AVE":         0.2785376978,    # Idm
+        "GLCM_IV_AVE":          0.5086337868,    # InverseVariance
+        "GLCM_JAVE_AVE":        4.510204082,     # JointAverage
+        "GLCM_INFOMEAS1_AVE":  -0.6705029852,    # Imc1
+        "GLCM_INFOMEAS2_AVE":   0.9910039918,    # Imc2
+        "GLCM_VARIANCE_AVE":    5.279571012,     # SumSquares (variance)
+        "GLCM_JMAX_AVE":        0.06919642857,   # MaximumProbability
+        "GLCM_SUMENTROPY_AVE":  2.559663993,     # SumEntropy
+    }
+    for key, gold in goldens.items():
+        assert row[key] == pytest.approx(gold, rel=1e-2), \
+            f"{key}: nyxus(ibsi=True) {row[key]} must match the PyRadiomics oracle {gold} to 1%"
