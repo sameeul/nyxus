@@ -1467,6 +1467,11 @@ TEST(TEST_NYXUS, TEST_GLCM_BUG_OFFSET_DEFAULT)
 	ASSERT_NO_THROW(test_glcm_bug_offset_default_is_one());
 }
 
+TEST(TEST_NYXUS, TEST_GLCM_AVE_PYRADIOMICS_ORACLE_CPP)
+{
+	ASSERT_NO_THROW(test_glcm_ave_pyradiomics_oracle_cpp());
+}
+
 //***** IBSI tests of GLDM ***** 
 
 TEST(TEST_NYXUS, TEST_IBSI_GLDM_SDE) 
