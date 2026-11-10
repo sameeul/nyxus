@@ -7,7 +7,7 @@ name = "nyxus"
 dynamic = ["version"]
 description = "Scalable library for calculating features from intensity-label image data"
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.10"
 license = {text = "MIT License"}
 authors = [
     {name = "Andriy Kharchenko", email = "andriy.kharchenko@axleinfo.com"}

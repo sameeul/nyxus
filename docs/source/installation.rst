@@ -106,7 +106,7 @@ GPU packages
 ``nyxus-cuda12x`` release with Windows wheels is 0.9.3, for CPython 3.9 to 3.12, a known issue
 (`#526 <https://github.com/PolusAI/nyxus/issues/526>`__). On Windows with Python 3.13 or newer,
 ``pip install nyxus-cuda12x`` therefore stops with ``No matching distribution found for
-nyxus-cuda12x``; use Python 3.9 to 3.12 there, or conda-forge with Python 3.10 to 3.13, where conda
+nyxus-cuda12x``; use Python 3.10 to 3.12 there, or conda-forge with Python 3.10 to 3.13, where conda
 picks the CUDA build (it needs Visual Studio, see the warning above).
 
 The Linux wheels do not bundle the CUDA runtime or cuFFT, and the Windows wheels bundle the

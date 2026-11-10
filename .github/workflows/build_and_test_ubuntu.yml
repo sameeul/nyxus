@@ -12,7 +12,7 @@ concurrency:
 
 env:
   BUILD_TYPE: Release
-  PYTHON_VER: 3.8
+  PYTHON_VER: "3.10"
 
 jobs:
   Build_and_Run_GTest:
